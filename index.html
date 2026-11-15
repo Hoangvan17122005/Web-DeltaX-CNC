@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101414">
+  <title>DELTA X — Quản lý sản xuất CNC</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --bg: #101414;
+      --panel: #171d1c;
+      --panel-raised: #1c2322;
+      --panel-soft: #202827;
+      --line: #2b3532;
+      --text: #edf2eb;
+      --muted: #8d9991;
+      --accent: #c7f36b;
+      --accent-dark: #9fcb4a;
+      --cyan: #66d6c5;
+      --amber: #f0b968;
+      --red: #f07869;
+      --radius: 16px;
+      font-family: "DM Sans", "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 360px;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 68% -12%, rgba(116, 153, 82, .11), transparent 34%),
+        var(--bg);
+    }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    .app-shell { min-height: 100vh; }
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 42px;
+      border-bottom: 1px solid rgba(148, 166, 151, .13);
+      background: rgba(16, 20, 20, .92);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(14px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; cursor: pointer; border: 0; background: none; padding: 0; text-align: left; }
+    .brand-mark { width: 36px; height: 36px; display: block; overflow: hidden; border-radius: 10px; background: #101413; }
+    .brand-mark img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .brand-name { font: 800 24px/1 "Barlow Condensed", sans-serif; letter-spacing: 2px; }
+    .brand-sub { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: 1.65px; }
+    .topbar-right { display: flex; align-items: center; gap: 24px; }
+    .plant-status { display: flex; align-items: center; gap: 8px; color: #bac5bc; font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px rgba(199, 243, 107, .6); }
+    .user-chip { display: flex; align-items: center; gap: 9px; padding-left: 20px; border-left: 1px solid var(--line); font-size: 12px; color: #d3dbd1; }
+    .user-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #303e34; color: var(--accent); font-size: 11px; font-weight: 700; }
+    .page-wrap { width: min(1280px, calc(100% - 72px)); margin: 0 auto; padding: 44px 0 64px; }
+    .breadcrumb { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+    .breadcrumb .breadcrumb-link { border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; }
+    .breadcrumb .breadcrumb-link:hover { color: var(--accent); }
+    .breadcrumb .back-button { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; margin-right: 7px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #dce5d8; font-size: 11px; font-weight: 600; transition: .18s ease; }
+    .breadcrumb .back-button:hover { border-color: #69795b; background: var(--panel-raised); color: var(--accent); }
+    .breadcrumb .back-button svg { width: 14px; height: 14px; }
+    .breadcrumb .current { color: #dce5d8; }
+    .eyebrow { color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 10px; font: 600 clamp(32px, 4vw, 46px)/1.08 "Barlow Condensed", sans-serif; letter-spacing: .3px; }
+    h2 { margin-bottom: 7px; font: 600 26px/1.1 "Barlow Condensed", sans-serif; }
+    .page-description { color: var(--muted); font-size: 13px; line-height: 1.7; margin-bottom: 0; }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
+    .heading-copy { max-width: 670px; }
+    .heading-copy .eyebrow { margin-bottom: 12px; }
+    .button {
+      min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      border: 1px solid transparent; border-radius: 9px; padding: 0 16px;
+      font-size: 12px; font-weight: 700; cursor: pointer; transition: .18s ease;
+    }
+    .button svg { width: 16px; height: 16px; }
+    .button-primary { background: var(--accent); color: #182012; }
+    .button-primary:hover { background: #d5ff82; transform: translateY(-1px); }
+    .button-secondary { border-color: var(--line); background: var(--panel); color: #dce4db; }
+    .button-secondary:hover { border-color: #62705f; background: var(--panel-raised); }
+    .button-quiet { border: 0; background: transparent; color: var(--muted); padding: 0 9px; }
+    .button-quiet:hover { color: var(--text); background: rgba(255,255,255,.04); }
+
+    .hero {
+      position: relative; overflow: hidden; min-height: 270px; display: flex; align-items: center;
+      padding: 44px 50px; border: 1px solid #354033; border-radius: 18px;
+      background: linear-gradient(110deg, #1d2722 0%, #1b2420 54%, #253126 100%);
+      margin-bottom: 38px;
+    }
+    .hero::after {
+      content: ""; position: absolute; width: 500px; height: 500px; right: 2%; top: -118px;
+      border: 1px solid rgba(199, 243, 107, .10); border-radius: 50%;
+      box-shadow: 0 0 0 34px rgba(199,243,107,.025), 0 0 0 72px rgba(199,243,107,.025), 0 0 0 110px rgba(199,243,107,.02);
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 600px; }
+    .hero .eyebrow { margin-bottom: 16px; }
+    .hero h1 { font-size: clamp(36px, 5vw, 54px); max-width: 560px; }
+    .hero p { color: #a7b3a7; font-size: 13px; line-height: 1.75; max-width: 470px; margin: 0; }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .section-heading h2 { margin: 0; font-size: 22px; }
+    .section-kicker { color: var(--muted); font-size: 11px; }
+    .module-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .module-card {
+      min-height: 210px; padding: 21px; text-align: left; position: relative; overflow: hidden;
+      border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(150deg, #1a211f, #171d1c);
+      cursor: pointer; transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .module-card:hover { transform: translateY(-4px); border-color: #58664f; background: linear-gradient(150deg, #202922, #191f1e); }
+    .module-card.featured { border-color: #48583b; background: linear-gradient(145deg, #202a20, #191f1d); }
+    .module-top { display: flex; align-items: flex-start; justify-content: space-between; }
+    .module-icon { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #3b4738; border-radius: 11px; color: var(--accent); background: rgba(199,243,107,.07); }
+    .module-icon svg { width: 21px; height: 21px; }
+    .module-arrow { color: #68756a; font-size: 18px; transition: .2s; }
+    .module-card:hover .module-arrow { transform: translate(3px,-3px); color: var(--accent); }
+    .module-count { color: #9bab98; font: 600 13px "Barlow Condensed", sans-serif; }
+    .module-card h3 { margin: 21px 0 7px; font: 600 20px "Barlow Condensed", sans-serif; letter-spacing: .25px; }
+    .module-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+    .dashboard-lower { display: grid; grid-template-columns: 1.35fr .85fr; gap: 16px; margin-top: 32px; }
+    .info-panel { border: 1px solid var(--line); border-radius: 13px; background: var(--panel); padding: 20px; }
+    .info-panel h3 { margin: 0; font: 600 18px "Barlow Condensed", sans-serif; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 17px; }
+    .muted-tag { padding: 5px 8px; border-radius: 6px; background: #242d29; color: #a5b1a6; font-size: 10px; }
+    .quick-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid #28312e; font-size: 12px; }
+    .quick-row:first-of-type { border-top: 0; }
+    .quick-name { color: #d8e0d6; font-weight: 600; }
+    .quick-sub { margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .quick-number { font: 600 18px "Barlow Condensed", sans-serif; }
+    .empty-note { padding: 13px 0 4px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+    .plan-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 17px; }
+    .summary-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #303a35; border-radius: 7px; color: #b6c0b7; font-size: 10px; }
+    .summary-chip strong { color: var(--text); font-size: 11px; }
+    .plan-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .plan-card { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    .plan-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .plan-month { font: 600 21px "Barlow Condensed", sans-serif; }
+    .plan-year { margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .plan-total { text-align: right; color: var(--accent); font: 700 22px "Barlow Condensed", sans-serif; }
+    .plan-total small { display: block; color: var(--muted); font: 400 9px "DM Sans", sans-serif; }
+    .plan-progress { height: 4px; overflow: hidden; margin: 16px 0 12px; background: #303934; border-radius: 99px; }
+    .plan-progress span { height: 100%; display: block; border-radius: inherit; background: var(--accent); }
+    .plan-product-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .plan-product-pill { padding: 5px 8px; border-radius: 6px; background: #242c28; color: #c4cec4; font-size: 10px; }
+    .plan-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; }
+    .plan-card-foot .subtle { color: var(--muted); font-size: 10px; }
+    .plan-actions { display: flex; align-items: center; gap: 12px; }
+    .button-danger { min-height: 36px; border-color: #593934; background: rgba(240,120,105,.07); color: #ef9689; padding: 0 11px; font-size: 10px; }
+    .button-danger:hover { border-color: var(--red); background: rgba(240,120,105,.15); color: #ffb0a5; }
+    .danger-link { border: 0; padding: 5px 0; background: transparent; color: #d78376; font-size: 10px; cursor: pointer; }
+    .danger-link:hover { color: #ff9a8b; }
+    .text-link { border: 0; padding: 0; background: none; color: var(--accent); font-size: 11px; font-weight: 600; cursor: pointer; }
+    .product-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 25px; }
+    .product-tile {
+      min-height: 122px; display: flex; flex-direction: column; justify-content: space-between; text-align: left;
+      padding: 15px; border: 1px solid var(--line); border-radius: 12px;
+      background: linear-gradient(150deg, #202824, #171d1c); cursor: pointer; transition: .18s;
+    }
+    .product-tile:hover, .product-tile.selected { border-color: var(--accent-dark); background: linear-gradient(150deg, #283522, #1c241d); }
+    .product-glyph { color: var(--accent); font: 700 10px "Barlow Condensed", sans-serif; letter-spacing: 1.2px; }
+    .product-tile strong { font: 600 24px "Barlow Condensed", sans-serif; }
+    .product-tile small { color: #aab6ab; font-size: 10px; }
+    .detail-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: -5px 0 16px; }
+    .detail-tab { min-width: 120px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #aab6ac; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .detail-tab:hover { border-color: #62705f; color: var(--text); }
+    .detail-tab.selected { border-color: var(--accent-dark); background: #232d20; color: var(--accent); }
+    .detail-tab small { color: var(--muted); font-size: 9px; font-weight: 500; }
+    .refining-table { min-width: 780px; }
+    .process-checkbox { width: 16px; height: 16px; accent-color: var(--accent-dark); cursor: pointer; }
+    .process-choice { display: inline-flex; align-items: center; gap: 7px; color: #bac5bb; white-space: nowrap; }
+    .process-disabled { color: #748078; font-size: 10px; }
+    .table-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    .table-toolbar { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .table-toolbar h3 { margin: 0; font: 600 18px "Barlow Condensed", sans-serif; }
+    .table-toolbar small { color: var(--muted); font-size: 10px; }
+    .table-toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .draft-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .draft-status { color: var(--amber); font-size: 9px; white-space: nowrap; }
+    .draft-controls .button { min-height: 34px; padding: 0 11px; font-size: 10px; }
+    .draft-controls .button:disabled { border-color: var(--line); background: #202624; color: #78837b; cursor: default; transform: none; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; min-width: 1080px; border-collapse: collapse; text-align: left; }
+    thead { background: #1b2220; }
+    th { padding: 11px 10px; color: #9eaaa0; font-size: 9px; font-weight: 700; letter-spacing: .65px; white-space: nowrap; text-transform: uppercase; }
+    td { padding: 9px 10px; border-top: 1px solid #29312e; color: #d5ded3; font-size: 11px; vertical-align: middle; }
+    tbody tr:hover { background: rgba(255,255,255,.018); }
+    tbody tr.row-complete { background: rgba(91, 190, 128, .075); }
+    tbody tr.row-complete:hover { background: rgba(91, 190, 128, .12); }
+    tbody tr.row-complete td:first-child { box-shadow: inset 3px 0 0 #53cb83; }
+    td:first-child, th:first-child { padding-left: 15px; }
+    .row-number { color: #89978b; font: 500 13px "Barlow Condensed", sans-serif; }
+    .cell-input, .cell-select, .cell-note {
+      min-width: 80px; width: 100%; padding: 7px 8px; border: 1px solid transparent; border-radius: 6px;
+      outline: none; background: transparent; color: #dce4db; font-size: 10px;
+    }
+    .cell-input { text-align: right; }
+    .cell-input:hover, .cell-select:hover, .cell-note:hover { border-color: #3a4740; }
+    .cell-input:focus, .cell-select:focus, .cell-note:focus { border-color: #728c52; background: #202823; }
+    .cell-select { min-width: 104px; appearance: none; background-color: #202723; }
+    .cell-name { min-width: 150px; color: #cbd6cc; }
+    .aluminum { color: var(--cyan); font-family: "Barlow Condensed", sans-serif; font-size: 13px; white-space: nowrap; }
+    .calculated { color: var(--accent); font: 600 14px "Barlow Condensed", sans-serif; text-align: right; }
+    .group-total { color: #eff5e9; font: 700 14px "Barlow Condensed", sans-serif; text-align: right; }
+    .completion-cell { min-width: 190px; display: flex; align-items: center; gap: 5px; }
+    .completion-cell .cell-input { flex: 1; }
+    .max-button { flex: 0 0 auto; padding: 4px 6px; border: 1px solid #49573d; border-radius: 5px; background: rgba(199,243,107,.07); color: var(--accent); font-size: 8px; font-weight: 800; cursor: pointer; }
+    .max-button:hover:not(:disabled) { background: rgba(199,243,107,.16); }
+    .max-button:disabled { opacity: .4; cursor: default; }
+    .max-all-button { min-height: 34px; padding: 0 11px; border: 1px solid #34718a; border-radius: 7px; background: rgba(66,166,205,.14); color: #8cdef8; font-size: 9px; font-weight: 800; letter-spacing: .35px; white-space: nowrap; cursor: pointer; transition: .16s ease; }
+    .max-all-button:hover:not(:disabled) { border-color: #58a7c3; background: rgba(66,166,205,.24); }
+    .max-all-button:disabled { opacity: .45; cursor: default; }
+    .completion-status { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border: 1px solid #30794f; border-radius: 99px; color: #83e7a9; background: rgba(53, 161, 98, .16); font-size: 9px; font-weight: 700; white-space: nowrap; }
+    .completion-status svg { width: 12px; height: 12px; }
+    .completion-pending { color: #718078; font-size: 9px; white-space: nowrap; }
+    .table-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    .legend-dot { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); }
+    .notice { margin-top: 12px; padding: 11px 13px; border: 1px solid #394034; border-radius: 8px; color: #b5c2b2; background: rgba(199,243,107,.045); font-size: 10px; line-height: 1.6; }
+    .notice strong { color: var(--accent); }
+    .blank-state { padding: 54px 24px; border: 1px dashed #35403a; border-radius: 12px; color: var(--muted); text-align: center; background: rgba(255,255,255,.012); }
+    .blank-state-icon { display: grid; place-items: center; width: 46px; height: 46px; margin: 0 auto 15px; border-radius: 13px; color: var(--accent); background: #252e25; }
+    .blank-state h3 { margin-bottom: 6px; color: #e2e8de; font: 600 20px "Barlow Condensed", sans-serif; }
+    .blank-state p { margin-bottom: 18px; font-size: 11px; line-height: 1.6; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(5,8,7,.76); backdrop-filter: blur(5px); }
+    .modal { width: min(510px, 100%); max-height: min(90vh, 760px); overflow-y: auto; border: 1px solid #3a453c; border-radius: 15px; background: #171e1b; box-shadow: 0 25px 90px rgba(0,0,0,.45); }
+    .modal-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 23px 17px; border-bottom: 1px solid var(--line); }
+    .modal-head .eyebrow { margin-bottom: 7px; font-size: 9px; }
+    .modal-head h2 { margin: 0; font-size: 23px; }
+    .close-button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; color: #a8b2a8; background: #202724; font-size: 18px; cursor: pointer; }
+    .close-button:hover { color: var(--text); border-color: #596552; }
+    .modal-body { padding: 20px 23px 22px; }
+    .form-label { display: block; margin-bottom: 7px; color: #c7d0c7; font-size: 11px; font-weight: 600; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { margin-bottom: 18px; }
+    .field input, .field select {
+      width: 100%; height: 41px; padding: 0 11px; border: 1px solid #343e39; border-radius: 7px;
+      outline: none; background: #202724; color: var(--text); font-size: 12px;
+    }
+    .field input:focus, .field select:focus { border-color: #7a9551; }
+    .quantity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .quantity-field { margin-bottom: 0; }
+    .quantity-field label { display: flex; justify-content: space-between; color: #bfc9bf; font-size: 10px; }
+    .quantity-field label span { color: #7d8b7f; }
+    .xs-variant-list { display: grid; gap: 9px; margin-bottom: 16px; }
+    .xs-variant-row { display: grid; grid-template-columns: 82px minmax(100px, 1fr) minmax(120px, 1fr); align-items: end; gap: 10px; padding: 10px; border: 1px solid #2d3732; border-radius: 8px; background: #1b221f; }
+    .xs-variant-name { align-self: center; color: #dce5da; font: 600 16px "Barlow Condensed", sans-serif; }
+    .xs-variant-name small { display: block; margin-top: 3px; color: var(--muted); font: 500 9px "DM Sans", sans-serif; letter-spacing: .6px; }
+    .xs-variant-row .field { margin: 0; }
+    .xs-variant-row .form-label { margin-bottom: 5px; font-size: 9px; }
+    .xs-variant-row input, .xs-variant-row select { height: 35px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .machine-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 15px; }
+    .machine-card { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(155deg, #1d2521, #171d1c); }
+    .machine-head { display: flex; align-items: flex-start; justify-content: space-between; }
+    .machine-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 9px; color: var(--cyan); background: rgba(102,214,197,.08); }
+    .machine-icon svg { width: 20px; height: 20px; }
+    .machine-card h3 { margin: 14px 0 4px; font: 600 21px "Barlow Condensed", sans-serif; }
+    .machine-card p { margin-bottom: 14px; color: var(--muted); font-size: 10px; }
+    .machine-card .field { margin: 0; }
+    .machine-card .field select { height: 36px; font-size: 10px; }
+    .machine-part-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 17px 0 9px; padding-top: 13px; border-top: 1px solid var(--line); }
+    .machine-part-heading strong { color: #dce5dc; font: 600 14px "Barlow Condensed", sans-serif; letter-spacing: .4px; }
+    .machine-part-heading span { color: var(--muted); font-size: 9px; }
+    .machine-part-table { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; }
+    .machine-part-table-head, .machine-part-row { display: grid; grid-template-columns: minmax(0, 1fr) 94px 58px; align-items: center; gap: 8px; }
+    .machine-part-table-head { padding: 8px 9px; color: #8d9d91; background: rgba(255,255,255,.025); font-size: 8px; font-weight: 700; letter-spacing: .45px; }
+    .machine-part-table-head span:not(:first-child) { text-align: center; }
+    .machine-part-row { min-height: 36px; padding: 6px 9px; border-top: 1px solid rgba(148,166,151,.1); }
+    .machine-part-detail { min-width: 0; display: flex; align-items: flex-start; gap: 8px; }
+    .machine-part-stt { flex: 0 0 27px; padding-top: 1px; color: var(--accent); font: 700 9px "DM Sans", sans-serif; }
+    .machine-part-name { color: #d5ded6; font-size: 10px; line-height: 1.3; overflow-wrap: anywhere; }
+    .machine-part-empty { color: #77847a; font-size: 9px; text-align: center; }
+    .machine-parts-expander summary, .machine-parts-complete { min-height: 34px; display: flex; align-items: center; justify-content: center; gap: 7px; border-top: 1px solid rgba(148,166,151,.1); color: var(--accent); font-size: 9px; font-weight: 700; cursor: pointer; list-style: none; }
+    .machine-parts-expander summary::-webkit-details-marker { display: none; }
+    .machine-parts-expander summary::after { width: 6px; height: 6px; flex: 0 0 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; content: ""; transform: rotate(45deg) translateY(-2px); transition: transform .18s ease; }
+    .machine-parts-expander[open] summary::after { transform: rotate(225deg) translateY(-2px); }
+    .machine-parts-expander summary .machine-expand-less { display: none; }
+    .machine-parts-expander[open] summary .machine-expand-more { display: none; }
+    .machine-parts-expander[open] summary .machine-expand-less { display: inline; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .gallery-card { min-height: 180px; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+    .gallery-art { height: 75px; display: grid; place-items: center; margin-bottom: 15px; border-radius: 8px; color: #9eb18f; background: linear-gradient(135deg,#242d27,#1b211f); }
+    .gallery-art.has-photo { height: 125px; padding: 5px; border: 1px solid rgba(148,166,151,.12); background: linear-gradient(135deg,#1d2521,#151b19); }
+    .gallery-art svg { width: 38px; height: 38px; }
+    .gallery-art img { width: 100%; height: 100%; border-radius: 5px; object-fit: contain; }
+    .gallery-card h3 { margin-bottom: 4px; font: 600 20px "Barlow Condensed", sans-serif; }
+    .gallery-card p { margin: 0; color: var(--muted); font-size: 10px; }
+    .gallery-card.product-choice { width: 100%; color: var(--text); text-align: left; cursor: pointer; transition: .18s ease; }
+    .gallery-card.product-choice:hover { transform: translateY(-2px); border-color: var(--accent-dark); }
+    .product-catalog-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 14px; }
+    .product-catalog-toolbar .field { width: min(100%, 360px); margin: 0; }
+    .product-catalog-toolbar .muted-tag { white-space: nowrap; }
+    .part-gallery-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
+    .part-gallery-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+    .part-photo-placeholder { min-height: 148px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-bottom: 1px dashed #3a4740; color: #849388; background: radial-gradient(ellipse at center, rgba(102,214,197,.07), transparent 70%), linear-gradient(140deg, #202824, #171d1c); }
+    .part-photo-placeholder svg { width: 32px; height: 32px; color: #8da480; }
+    .part-photo-placeholder small { font-size: 9px; font-weight: 700; letter-spacing: .8px; }
+    .part-photo-placeholder.has-photo { height: 180px; padding: 8px; border-bottom-style: solid; }
+    .part-photo-placeholder img { width: 100%; height: 100%; object-fit: contain; }
+    .part-gallery-info { padding: 12px; }
+    .part-gallery-info h3 { min-height: 38px; margin: 5px 0 10px; font: 600 17px/1.15 "Barlow Condensed", sans-serif; }
+    .part-serial { color: var(--accent); font: 700 10px "DM Sans", sans-serif; }
+    .part-spec-list { display: grid; gap: 6px; color: var(--muted); font-size: 10px; }
+    .part-spec-list span { display: flex; justify-content: space-between; gap: 8px; }
+    .part-spec-list strong { color: #cbd6cc; font-weight: 600; text-align: right; }
+    .part-search-empty { display: none; margin-top: 12px; }
+    .inventory-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .metric-card { padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+    .metric-card span { color: var(--muted); font-size: 10px; }
+    .metric-card strong { display: block; margin-top: 8px; color: var(--accent); font: 600 25px "Barlow Condensed", sans-serif; }
+    .inventory-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .inventory-choice { min-height: 150px; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(150deg, #202824, #171d1c); color: var(--text); text-align: left; cursor: pointer; transition: .18s ease; }
+    .inventory-choice:hover { transform: translateY(-2px); border-color: var(--accent-dark); }
+    .inventory-choice span { color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+    .inventory-choice strong { display: block; margin: 15px 0 6px; font: 600 24px "Barlow Condensed", sans-serif; }
+    .inventory-choice small { color: var(--muted); font-size: 11px; }
+    .stock-form { display: grid; grid-template-columns: 1fr 1.5fr .8fr auto; align-items: end; gap: 12px; margin-bottom: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    .stock-form .field { margin: 0; }
+    .stock-form .form-label { font-size: 10px; }
+    .stock-table { min-width: 720px; }
+    .stock-quantity { color: var(--accent); font: 600 15px "Barlow Condensed", sans-serif; }
+    .stock-delete { border: 0; padding: 5px 8px; border-radius: 6px; background: rgba(240,120,105,.08); color: #e99588; font-size: 10px; cursor: pointer; }
+    .stock-delete:hover { background: rgba(240,120,105,.17); }
+    .shipment-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    .shipment-form .field { margin: 0; }
+    .shipment-form .field-wide { grid-column: 1 / -1; }
+    .shipment-record { margin-bottom: 12px; }
+    .shipment-record summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+    .shipment-record summary::-webkit-details-marker { display: none; }
+    .shipment-record summary strong { color: var(--accent); font: 600 17px "Barlow Condensed", sans-serif; }
+    .shipment-record summary span { color: var(--muted); font-size: 10px; }
+    .shipment-record-body { padding-top: 16px; }
+    .shipment-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px; }
+    .shipment-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .shipment-meta span { padding: 6px 8px; border-radius: 6px; background: #222b27; color: #b6c1b6; font-size: 10px; }
+    .simple-table { width: 100%; min-width: 550px; }
+    .simple-table th, .simple-table td { padding: 12px; }
+    .footer { margin-top: 42px; padding-top: 16px; border-top: 1px solid rgba(148,166,151,.1); display: flex; justify-content: space-between; gap: 12px; color: #68766d; font-size: 9px; letter-spacing: .35px; }
+    .auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 28px 16px; background: radial-gradient(ellipse at 50% 0, rgba(116,153,82,.12), transparent 42%), var(--bg); }
+    .auth-card { width: min(460px, 100%); padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(150deg, #1a211f, #171d1c); box-shadow: 0 24px 70px rgba(0,0,0,.32); }
+    .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
+    .auth-brand img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
+    .auth-card h1 { margin-bottom: 8px; font-size: 30px; }
+    .auth-copy, .auth-notice { color: var(--muted); font-size: 12px; line-height: 1.65; }
+    .auth-notice { margin: 18px 0; padding: 12px 13px; border: 1px solid #3a473b; border-radius: 9px; background: rgba(199,243,107,.04); }
+    .auth-form { display: grid; gap: 13px; margin-top: 20px; }
+    .auth-form input { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; outline: none; background: #111615; color: var(--text); font-size: 12px; }
+    .auth-form input:focus { border-color: #687b55; }
+    .auth-password-wrap { position: relative; }
+    .auth-password-wrap input { padding-right: 44px; }
+    .auth-password-toggle { position: absolute; top: 50%; right: 7px; display: grid; width: 30px; height: 30px; place-items: center; transform: translateY(-50%); border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+    .auth-password-toggle:hover, .auth-password-toggle:focus-visible { background: rgba(255,255,255,.06); color: var(--text); }
+    .auth-password-toggle svg { width: 17px; height: 17px; }
+    .auth-error { margin: 12px 0 0; color: #ff9a8b; font-size: 12px; line-height: 1.5; }
+    .auth-switch { width: 100%; margin-top: 15px; border: 0; background: transparent; color: var(--cyan); font-size: 12px; cursor: pointer; }
+    .auth-account-actions { display: flex; align-items: center; gap: 8px; }
+    .role-tag { padding: 5px 8px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .access-list { display: grid; gap: 10px; }
+    .access-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+    .access-row small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .access-row-actions { display: flex; gap: 7px; }
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 80; display: flex; align-items: center; gap: 9px; padding: 12px 16px; border: 1px solid #52633f; border-radius: 9px; color: #e4eddd; background: #202b20; box-shadow: 0 12px 35px rgba(0,0,0,.35); font-size: 11px; animation: toast-in .22s ease-out; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 1000px) {
+      .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .product-grid, .gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .hero { padding: 38px; }
+    }
+    @media (max-width: 680px) {
+      .topbar { height: auto; min-height: 62px; padding: 8px 14px; gap: 6px; flex-wrap: wrap; }
+      .topbar-right { gap: 8px; }
+      .auth-account-actions { gap: 4px; }
+      .auth-account-actions .button { min-height: 32px; padding: 0 8px; font-size: 9px; }
+      .role-tag { display: none; }
+      .brand-name { font-size: 21px; }
+      .plant-status { display: none; }
+      .user-chip { padding-left: 0; border: 0; }
+      .user-chip span:last-child { display: none; }
+      .page-wrap { width: calc(100% - 36px); padding-top: 27px; }
+      .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 24px; }
+      .hero { min-height: 245px; padding: 28px 23px; }
+      .hero::after { right: -230px; }
+      .module-grid { gap: 10px; }
+      .module-card { min-height: 190px; padding: 15px; }
+      .module-card h3 { font-size: 18px; }
+      .module-card p { font-size: 10px; }
+      .dashboard-lower, .plan-list { grid-template-columns: 1fr; }
+      .product-grid, .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .part-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .product-catalog-toolbar { align-items: flex-start; flex-direction: column; }
+      .product-catalog-toolbar .field { width: 100%; }
+      .product-tile { min-height: 108px; }
+      .machine-grid { grid-template-columns: 1fr; }
+      .xs-variant-row { grid-template-columns: 62px minmax(68px, 1fr) minmax(100px, 1fr); gap: 7px; padding: 8px; }
+      .xs-variant-row input, .xs-variant-row select { padding: 0 7px; font-size: 10px; }
+      .inventory-metrics { gap: 7px; }
+      .metric-card { padding: 12px; }
+      .metric-card strong { font-size: 21px; }
+      .inventory-choice-grid { grid-template-columns: 1fr; }
+      .stock-form { grid-template-columns: 1fr 1fr; }
+      .stock-form .button { grid-column: 1 / -1; }
+      .shipment-form { grid-template-columns: 1fr; }
+      .shipment-form .field-wide { grid-column: auto; }
+      .table-toolbar { align-items: flex-start; flex-direction: column; }
+      .footer { flex-direction: column; }
+      .access-row { align-items: flex-start; flex-direction: column; }
+      .access-row-actions { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite"></div>
+
+  <script>
+    const XS_VARIANTS = [
+      { key: "XS_D800", model: "D800", size: 800 },
+      { key: "XS_D600", model: "D600", size: 600 },
+      { key: "XS_D400", model: "D400", size: 400 }
+    ];
+    const PRODUCT_NAMES = [...XS_VARIANTS.map(variant => variant.key), "X3", "X2", "Băng tải XS"];
+    const XS_BOM = [
+      { aluminum: "5×340×340", common: "Gá động cơ trục 4", perUnit: 1, blank: 0.17 },
+      { aluminum: "5×340×340", common: "Tản nhiệt orampi", perUnit: 1, blank: 0.04 },
+      { aluminum: "5×340×340", common: "Calid", perUnit: 1, blank: 0.04 },
+      { aluminum: "10×330×360", common: "Căng đai dài XS", perUnit: 3, blank: 0.13, sharedStockGroup: "belt-tension" },
+      { aluminum: "10×330×360", common: "Căng đai ngắn XS", perUnit: 3, blank: 0.13, sharedStockGroup: "belt-tension" },
+      { aluminum: "10×330×360", common: "Đỡ căng đai dài XS", perUnit: 3, blank: 0.13, sharedStockGroup: "belt-support" },
+      { aluminum: "10×330×360", common: "Đỡ căng đai ngắn XS", perUnit: 3, blank: 0.09, sharedStockGroup: "belt-support" },
+      { aluminum: "10×330×360", common: "Căng đai trục 4 XS", perUnit: 1, blank: 0.03 },
+      { aluminum: "10×330×360", common: "Đỡ căng đai trục 4 XS", perUnit: 1, blank: 0.03 },
+      { aluminum: "10×330×360", common: "Gá động cơ trục 5 XS", perUnit: 0, blank: 0, axis: 5, note: "Chỉ dùng cho máy 5 trục · 1 cái/sản phẩm" },
+      { aluminum: "10×330×360", common: "Vành cảm biến trục 5 XS", perUnit: 0, blank: 0, axis: 5, note: "Chỉ dùng cho máy 5 trục · 1 cái/sản phẩm" },
+      { aluminum: "10×330×360", common: "Gá động cơ trục 6 XS", perUnit: 0, blank: 0, axis: 6, note: "Chỉ dùng cho máy 6 trục · 1 cái/sản phẩm" },
+      { aluminum: "10×330×360", common: "Mặt bích trục 6", perUnit: 0, blank: 0, axis: 6, note: "Chỉ dùng cho máy 6 trục · 1 cái/sản phẩm" },
+      { aluminum: "10×330×360", common: "Hút T4", perUnit: 1, blank: 0.07 },
+      { aluminum: "10×330×360", common: "Hút T5", perUnit: 0, blank: 0, axis: 5, note: "Chỉ dùng cho máy 5 trục · 1 cái/sản phẩm" },
+      { aluminum: "10×330×360", common: "Hút T6", perUnit: 0, blank: 0, axis: 6, note: "Chỉ dùng cho máy 6 trục · 1 cái/sản phẩm" },
+      { aluminum: "10×330×360", common: "Gá PC Smart", perUnit: 1, blank: 0.13 },
+      { aluminum: "12×300×300", common: "Tấm trên XS: D400", perUnit: 1, blank: 1, model: 400 },
+      { aluminum: "12×300×300", common: "Tấm trên XS: D600", perUnit: 1, blank: 1, model: 600, note: "Chi tiết của sản phẩm D600" },
+      { aluminum: "12×300×300", common: "Tấm trên XS: D800", perUnit: 1, blank: 1, model: 800, note: "Chi tiết của sản phẩm D800" },
+      { aluminum: "12×420×420", common: "Tấm dưới XS: D400", perUnit: 1, blank: 1, model: 400 },
+      { aluminum: "12×420×420", common: "Tấm dưới XS: D600", perUnit: 1, blank: 1, model: 600, note: "Chi tiết của sản phẩm D600" },
+      { aluminum: "12×420×420", common: "Tấm dưới XS: D800", perUnit: 1, blank: 1, model: 800, note: "Chi tiết của sản phẩm D800" },
+      { aluminum: "16×300×300", common: "Gá 1 Camera CN", perUnit: 1, blank: 0.10 },
+      { aluminum: "16×300×300", common: "Gá tản nhiệt", perUnit: 1, blank: 0.06 },
+      { aluminum: "16×300×300", common: "Gá kẹp lên khung", perUnit: 1, blank: 0.06 },
+      { aluminum: "16×300×300", common: "Gá đèn Camera", perUnit: 1, blank: 0.06 },
+      { aluminum: "20×300×300", common: "Kẹp ổ bi trên XS", perUnit: 1, blank: 0.06 },
+      { aluminum: "20×300×300", common: "Kẹp ổ bi dưới XS", perUnit: 1, blank: 0.02 },
+      { aluminum: "Pully", common: "Pully nhỏ", perUnit: 3, blank: 3 },
+      { aluminum: "Pully", common: "Pully đơn", perUnit: 3, blank: 3 },
+      { aluminum: "Pully", common: "Pully trục 4", perUnit: 1, blank: 1 },
+      { aluminum: "Pully", common: "Pully trục 5", perUnit: 0, blank: 0, axis: 5, note: "Chỉ dùng cho máy 5 trục · 1 cái/sản phẩm" },
+      { aluminum: "Pully", common: "Pully trục 6", perUnit: 0, blank: 0, axis: 6, note: "Chỉ dùng cho máy 6 trục · 1 cái/sản phẩm" }
+    ];
+    const PRODUCT_BOM = {
+      X3: [
+        { aluminum: "5×340×340", common: "Gá băng tải X3", perUnit: 1, blank: 0.08 },
+        { aluminum: "10×330×360", common: "Đế di động X3", perUnit: 1, blank: 0.19 },
+        { aluminum: "12×320×370", common: "Hộp số X3", perUnit: 3, blank: 0.20 },
+        { aluminum: "16×300×300", common: "Mặt bích X3", perUnit: 3, blank: 0.10 },
+        { aluminum: "Tấm có sẵn khỏi ghi", common: "Tấm X3", perUnit: 1, blank: 0 }
+      ],
+      X2: [
+        { aluminum: "10×330×360", common: "Hộp số Slider X2", perUnit: 3, blank: 0.20 },
+        { aluminum: "10×330×360", common: "Đế di động X2", perUnit: 1, blank: 0.10 }
+      ],
+      "Băng tải XS": [
+        { aluminum: "10×330×360", common: "Gá nhôm băng tải XS", perUnit: 6, blank: 0.20 },
+        { aluminum: "", common: "Bánh răng sắt", perUnit: 1, blank: 0, note: "Có sẵn chỉ cần phay cho lỗ to ra" },
+        { aluminum: "", common: "Tấm gá Sắt", perUnit: 1, blank: 0, note: "Có sẵn chỉ cần phay cho lỗ to ra" }
+      ]
+    };
+    XS_VARIANTS.forEach(variant => {
+      PRODUCT_BOM[variant.key] = XS_BOM.map((part, index) => {
+        const active = !part.axis && (!part.model || part.model === variant.size);
+        return {
+          ...part,
+          stt: index < 13 ? index + 1 : index + 2,
+          perUnit: active ? part.perUnit : 0,
+          blank: active ? part.blank : 0,
+          cad: "—"
+        };
+      });
+    });
+    const XS_PART_IMAGES = {
+      "Gá động cơ trục 4": "Ga-DongCo_Truc4_XS.jpg",
+      "Tản nhiệt orampi": "Tan_Nhiet_Oranpi.jpg",
+      "Calid": "Calid_Xs.jpg",
+      "Căng đai dài XS": "Cang_Dai_Dai_XS.jpg",
+      "Căng đai ngắn XS": "Cang_Dai_Ngan_XS.jpg",
+      "Đỡ căng đai dài XS": "Do_Cang_Dai_Dai_XS.jpg",
+      "Đỡ căng đai ngắn XS": "Do_Cang_Dai_ănng_XS.jpg",
+      "Căng đai trục 4 XS": "Cang_Dai_truc4_XS.jpg",
+      "Đỡ căng đai trục 4 XS": "Do_Cang_Dai_Truc4_XS.jpg",
+      "Gá động cơ trục 5 XS": "Ga_Dong_Co_Truc5_XS.png",
+      "Vành cảm biến trục 5 XS": "Vanh_Cam_Bien_Truc_5_XS.png",
+      "Gá động cơ trục 6 XS": "Ga_Dong_Co_Truc6_XS.png",
+      "Mặt bích trục 6": "Mat_Bich_Truc6_XS.png",
+      "Hút T4": "Hut_Truc4_Xs.jpg",
+      "Hút T5": "Hut_Truc_5_XS.png",
+      "Hút T6": "Hut_Truc_6.jpg",
+      "Gá PC Smart": "Ga_PC_Xs.jpg",
+      "Gá 1 Camera CN": "Ga_1_Camera_CNC_XS.png",
+      "Gá tản nhiệt": "Ga_Tan_Nhiet_XS.png",
+      "Gá kẹp lên khung": "Ga_Kep_Len_Khung_XS.png",
+      "Gá đèn Camera": "Ga_Den_Camera_XS.png",
+      "Kẹp ổ bi trên XS": "Kep_O_Bi_Tren_XS.png",
+      "Kẹp ổ bi dưới XS": "Kep_O_Bi_Duoi_XS.png",
+      "Pully đơn": "Puly_Don_XS.png",
+      "Pully trục 4": "Puly_Truc_4_XS.jpg",
+      "Pully trục 5": "Puly_Truc_5_XS.png",
+      "Pully trục 6": "Puly_Truc_6_XS.png"
+    };
+    const PRODUCT_PART_IMAGES = {
+      XS_D400: {
+        "Tấm trên XS: D400": "Tam_Tren_D400_XS.png",
+        "Tấm dưới XS: D400": "Tam_Duoi_D400_XS.png"
+      },
+      XS_D600: {
+        "Tấm trên XS: D600": "Tam_Tren_D600_XS.png",
+        "Tấm dưới XS: D600": "Tam_Duoi_D600_XS.png"
+      },
+      XS_D800: {
+        "Tấm trên XS: D800": "Tam_Tren_D800_XS.png",
+        "Tấm dưới XS: D800": "Tam_Duoi_D800_XS.png"
+      },
+      X3: {
+        "Gá băng tải X3": "Ga_Bang_tai_X3.jpg",
+        "Đế di động X3": "De_Di_Dong_X3.jpg",
+        "Hộp số X3": "Hop_So_X3.jpg",
+        "Mặt bích X3": "Mat_Bich_X3.jpg",
+        "Tấm X3": "Tam_X3.png"
+      },
+      "Băng tải XS": {
+        "Gá nhôm băng tải XS": "Ga_bang_Tai_XS.jpg",
+        "Bánh răng sắt": "Banh_Rang_Sat.jpg"
+      }
+    };
+    const PRODUCT_CARD_IMAGES = {
+      XS_D800: "Delta_XS-D400_D600_D800.jpg",
+      XS_D600: "Delta_XS-D400_D600_D800.jpg",
+      XS_D400: "Delta_XS-D400_D600_D800.jpg",
+      X3: "Delta-X-3.jpg",
+      X2: "Delta_X2.jpg",
+      "Băng tải XS": "Bang_tai_XS.jpg"
+    };
+    const CNC_MACHINE_PARTS = [
+      { stt: [1], name: "Gá động cơ trục 4", machines: [2] },
+      { stt: [2], name: "Tản nhiệt orampi", machines: [4] },
+      { stt: [3], name: "Calid", machines: [2] },
+      { stt: [4], name: "Căng đai dài XS", machines: [2, 3] },
+      { stt: [5], name: "Căng đai ngắn XS", machines: [2, 3] },
+      { stt: [6], name: "Đỡ căng đai dài XS", machines: [2, 3] },
+      { stt: [7], name: "Đỡ căng đai ngắn XS", machines: [2, 3] },
+      { stt: [8], name: "Căng đai trục 4 XS", machines: [2, 3] },
+      { stt: [9], name: "Đỡ căng đai trục 4 XS", machines: [2, 3] },
+      { stt: [10], name: "Gá động cơ trục 5 XS", machines: [2, 3] },
+      { stt: [11], name: "Vành cảm biến trục 5 XS", machines: [2] },
+      { stt: [12], name: "Gá động cơ trục 6 XS", machines: [2] },
+      { stt: [13], name: "Mặt bích trục 6", machines: [1] },
+      { stt: [14, 41], name: "Gá nhôm băng tải XS", machines: [2, 1] },
+      { stt: [15], name: "Hút T4", machines: [2, 1] },
+      { stt: [16], name: "Hút T5", machines: [2, 1] },
+      { stt: [17], name: "Hút T6", machines: [2, 1] },
+      { stt: [18], name: "Gá PC Smart", machines: [2, 1] },
+      { stt: [19], name: "Tấm trên XS: D400", machines: [2] },
+      { stt: [20], name: "Tấm trên XS: D600", machines: [2] },
+      { stt: [21], name: "Tấm trên XS: D800", machines: [2] },
+      { stt: [22], name: "Tấm dưới XS: D400", machines: [2] },
+      { stt: [23], name: "Tấm dưới XS: D600", machines: [2] },
+      { stt: [24], name: "Tấm dưới XS: D800", machines: [2] },
+      { stt: [25], name: "Gá 1 Camera CN", machines: [4] },
+      { stt: [26], name: "Gá tản nhiệt", machines: [4] },
+      { stt: [27], name: "Gá kẹp lên khung", machines: [4] },
+      { stt: [28], name: "Gá đèn Camera", machines: [4] },
+      { stt: [29], name: "Kẹp ổ bi trên XS", machines: [2, 3] },
+      { stt: [30], name: "Kẹp ổ bi dưới XS", machines: [2, 3] },
+      { stt: [31], name: "Pully đôi nhỏ", machines: [3] },
+      { stt: [32], name: "Pully đơn", machines: [3] },
+      { stt: [33], name: "Pully trục 4", machines: [1] },
+      { stt: [34], name: "Pully trục 5", machines: [1] },
+      { stt: [35], name: "Pully trục 6", machines: [1] },
+      { stt: [36], name: "Gá băng tải X3", machines: [2, 3] },
+      { stt: [37], name: "Đế di động X3", machines: [2, 1] },
+      { stt: [38], name: "Hộp số X3", machines: [2, 3] },
+      { stt: [39], name: "Mặt bích X3", machines: [3] },
+      { stt: [40], name: "Tấm X3", machines: [2] },
+      { stt: [42], name: "Bánh răng sắt", machines: [1] },
+      { stt: [43], name: "Tấm gá sắt", machines: [1] }
+    ];
+    const MONTHS = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
+    const STORAGE_KEY = "forge-cnc-v1";
+    const API_BASE = location.protocol === "file:" ? "http://127.0.0.1:3000" : "";
+    const icons = {
+      brand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.8 20 7v10l-8 4.2L4 17V7l8-4.2Z"/><path d="M12 7v10m-4.3-7.7 8.6 5.4m0-5.4-8.6 5.4"/></svg>',
+      calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="16" rx="2.4"/><path d="M7.5 3v4m9-4v4M3.5 10h17m-12 4h3m-3 3h7"/></svg>',
+      box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 8.5 4.5v9L12 21l-8.5-4.5v-9L12 3Z"/><path d="m3.8 7.7 8.2 4.5 8.2-4.5M12 12.2V21"/></svg>',
+      image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>',
+      machine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5V20M2.5 20h19M7 8h10v7H7zm5 7v3m-3 2v-3m6 3v-3"/></svg>',
+      plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>',
+      trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17.5 9 11l4 4 8-9M15 6h6v6"/></svg>',
+      eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>',
+      eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path d="m3 3 18 18"/></svg>'
+    };
+
+    let hasLegacyLocalState = false;
+    function loadState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (parsed && Array.isArray(parsed.plans)) {
+          hasLegacyLocalState = true;
+          return parsed;
+        }
+      } catch (error) {
+        console.warn("Không thể đọc dữ liệu kế hoạch đã lưu.", error);
+      }
+      return { plans: [], allocations: {}, bom: null };
+    }
+    function migrateState(target) {
+      let migrated = false;
+      const version = Number(target.bomVersion || 0);
+      if (version < 2) {
+        if (target.bom) {
+          if (target.bom.XS) {
+            delete target.bom.XS;
+            migrated = true;
+          }
+          XS_VARIANTS.forEach(variant => {
+            if (target.bom[variant.key]) {
+              delete target.bom[variant.key];
+              migrated = true;
+            }
+          });
+        }
+        target.plans.forEach(plan => {
+          XS_VARIANTS.forEach(variant => {
+            if (plan.progress?.[variant.key]) {
+              plan.archivedSampleProgress = plan.archivedSampleProgress || {};
+              plan.archivedSampleProgress[variant.key] = plan.progress[variant.key];
+              delete plan.progress[variant.key];
+              migrated = true;
+            }
+          });
+        });
+        target.bomVersion = 2;
+        migrated = true;
+      }
+      if (Number(target.bomVersion || 0) < 3) {
+        if (target.bom) {
+          ["X3", "X2"].forEach(product => {
+            if (target.bom[product]) {
+              delete target.bom[product];
+              migrated = true;
+            }
+          });
+        }
+        target.plans.forEach(plan => {
+          ["X3", "X2"].forEach(product => {
+            if (plan.progress?.[product]) {
+              plan.archivedSampleProgress = plan.archivedSampleProgress || {};
+              plan.archivedSampleProgress[product] = plan.progress[product];
+              delete plan.progress[product];
+              migrated = true;
+            }
+          });
+        });
+        target.bomVersion = 3;
+        migrated = true;
+      }
+      target.plans.forEach(plan => {
+        plan.quantities = plan.quantities || {};
+        if (Object.prototype.hasOwnProperty.call(plan.quantities, "XS")) {
+          if (!Object.prototype.hasOwnProperty.call(plan.quantities, "XS_D800")) {
+            plan.quantities.XS_D800 = Number(plan.quantities.XS || 0);
+          }
+          delete plan.quantities.XS;
+          migrated = true;
+        }
+        if (Object.prototype.hasOwnProperty.call(plan.quantities, "Smart")) {
+          delete plan.quantities.Smart;
+          migrated = true;
+        }
+        plan.axes = plan.axes || {};
+        XS_VARIANTS.forEach(variant => {
+          if (!["4 trục", "5 trục", "6 trục"].includes(plan.axes[variant.key])) {
+            plan.axes[variant.key] = "4 trục";
+            migrated = true;
+          }
+        });
+        if (plan.progress?.XS && !plan.progress.XS_D800) {
+          plan.progress.XS_D800 = plan.progress.XS;
+          delete plan.progress.XS;
+          migrated = true;
+        }
+        if (plan.progress?.Smart) {
+          delete plan.progress.Smart;
+          migrated = true;
+        }
+      });
+      target.allocations = target.allocations || {};
+      Object.keys(target.allocations).forEach(machine => {
+        if (target.allocations[machine] === "XS") {
+          target.allocations[machine] = "XS_D800";
+          migrated = true;
+        } else if (target.allocations[machine] === "Smart") {
+          delete target.allocations[machine];
+          migrated = true;
+        }
+      });
+      if (target.bom?.XS && !target.bom.XS_D800) {
+        target.bom.XS_D800 = target.bom.XS;
+        migrated = true;
+      }
+      if (target.bom?.XS) delete target.bom.XS;
+      if (target.bom?.Smart) {
+        delete target.bom.Smart;
+        migrated = true;
+      }
+      return migrated;
+    }
+
+    function ensureInventoryState(target) {
+      if (!target.inventory || typeof target.inventory !== "object") target.inventory = {};
+      if (!Array.isArray(target.inventory.aluminumReceipts)) target.inventory.aluminumReceipts = [];
+      if (!Array.isArray(target.inventory.shipments)) target.inventory.shipments = [];
+    }
+    let state = loadState();
+    ensureInventoryState(state);
+    let stateMigrated = migrateState(state);
+    function applySavedBom(target) {
+      if (!target.bom) return;
+      Object.keys(PRODUCT_BOM).forEach(product => {
+        const savedRows = target.bom[product];
+        if (!Array.isArray(savedRows)) return;
+        PRODUCT_BOM[product].forEach((part, index) => {
+          const saved = product === "Băng tải XS"
+            ? savedRows.find(row => row?.common === part.common)
+            : savedRows[index];
+          if (!part || !saved || typeof saved !== "object") return;
+          ["aluminum", "common", "cad"].forEach(key => {
+            if (typeof saved[key] === "string") part[key] = saved[key];
+          });
+          ["perUnit", "blank"].forEach(key => {
+            if (Number.isFinite(saved[key]) && saved[key] >= 0) part[key] = saved[key];
+          });
+        });
+      });
+    }
+    applySavedBom(state);
+    state.bom = PRODUCT_BOM;
+    state.bomVersion = 3;
+    let currentView = "dashboard";
+    let activePlanId = null;
+    let activeProduct = null;
+    let activeCatalogProduct = null;
+    let activeProcess = "cnc";
+    let pendingPlanEdits = Object.create(null);
+    let toastTimer;
+    let databaseReady = false;
+    let databaseRevision = 0;
+    let currentUser = null;
+    let storageMode = "sqlite";
+    let authSetup = null;
+    let databaseWriteQueue = Promise.resolve();
+    if (stateMigrated) saveState();
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.warn("Không thể lưu bản sao dự phòng trên trình duyệt.", error);
+      }
+      if (databaseReady && currentUser && ["editor", "admin"].includes(currentUser.role)) {
+        const snapshot = JSON.stringify(state);
+        databaseWriteQueue = databaseWriteQueue.then(async () => {
+          const response = await fetch(`${API_BASE}/api/state`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ state: JSON.parse(snapshot), expectedRevision: databaseRevision })
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            const error = new Error(result.error || `Database save failed (${response.status}).`);
+            error.status = response.status;
+            throw error;
+          }
+          databaseRevision = result.revision;
+        }).catch(error => {
+          databaseReady = false;
+          console.error("Không thể lưu dữ liệu vào cơ sở dữ liệu.", error);
+          showDatabaseError(error.status === 409
+            ? "Có người khác vừa cập nhật dữ liệu. Tải lại trang để nhận bản mới nhất trước khi tiếp tục."
+            : error.status === 403
+              ? "Tài khoản của bạn không có quyền ghi dữ liệu. Hãy đăng xuất rồi đăng nhập lại."
+              : "Không thể lưu dữ liệu lên máy chủ. Hãy kiểm tra kết nối rồi thử tải lại trang.");
+        });
+      }
+    }
+    async function initializeDatabase() {
+      const app = document.getElementById("app");
+      app.innerHTML = `<section class="blank-state" style="margin-top:12vh"><span class="blank-state-icon">${icons.calendar}</span><h3>Đang kết nối</h3><p>Đang xác thực tài khoản và tải dữ liệu sản xuất...</p></section>`;
+      try {
+        const sessionResponse = await fetch(`${API_BASE}/api/auth/session`, { cache: "no-store" });
+        if (!sessionResponse.ok) throw new Error(`Authentication check failed (${sessionResponse.status}).`);
+        const session = await sessionResponse.json();
+        currentUser = session.user;
+        storageMode = session.storageMode || "sqlite";
+        if (!currentUser) {
+          databaseReady = false;
+          const setupResponse = await fetch(`${API_BASE}/api/auth/setup`, { cache: "no-store" });
+          if (!setupResponse.ok) throw new Error(`Authentication setup failed (${setupResponse.status}).`);
+          authSetup = await setupResponse.json();
+          renderAuthPage("login");
+          return;
+        }
+
+        const response = await fetch(`${API_BASE}/api/state`, { cache: "no-store" });
+        if (response.status === 401) {
+          currentUser = null;
+          databaseReady = false;
+          authSetup = await (await fetch(`${API_BASE}/api/auth/setup`, { cache: "no-store" })).json();
+          renderAuthPage("login", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+          return;
+        }
+        if (!response.ok) throw new Error(`Database connection failed (${response.status}).`);
+        const result = await response.json();
+        databaseRevision = Number(result.revision || 0);
+        const hasDatabaseState = Boolean(result.state);
+        if (hasDatabaseState) {
+          state = result.state;
+          state.plans = Array.isArray(state.plans) ? state.plans : [];
+          state.allocations = state.allocations || {};
+          ensureInventoryState(state);
+          const databaseMigrated = migrateState(state);
+          applySavedBom(state);
+          state.bom = PRODUCT_BOM;
+          state.bomVersion = 3;
+          stateMigrated = stateMigrated || databaseMigrated;
+        } else if (hasLegacyLocalState && ["editor", "admin"].includes(currentUser.role)) {
+          const importResponse = await fetch(`${API_BASE}/api/state`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ state, expectedRevision: 0 })
+          });
+          if (!importResponse.ok) throw new Error(`Không thể nhập dữ liệu trình duyệt (${importResponse.status}).`);
+          const imported = await importResponse.json();
+          databaseRevision = imported.revision;
+          showToast("Đã nhập dữ liệu cũ vào SQLite.");
+        } else if (!hasDatabaseState) {
+          state = { plans: [], allocations: {}, bom: null };
+          ensureInventoryState(state);
+          applySavedBom(state);
+          state.bom = PRODUCT_BOM;
+          state.bomVersion = 3;
+        }
+        databaseReady = true;
+        if ((hasDatabaseState || hasLegacyLocalState) && stateMigrated && ["editor", "admin"].includes(currentUser.role)) saveState();
+        renderDashboard();
+      } catch (error) {
+        databaseReady = false;
+        console.error("Không thể kết nối máy chủ hoặc cơ sở dữ liệu.", error);
+        showDatabaseError("Không thể kết nối máy chủ hoặc cơ sở dữ liệu. Hãy thử lại khi kết nối ổn định.");
+      }
+    }
+    function renderAuthPage(mode, errorMessage = "") {
+      currentView = "auth";
+      const registering = mode === "register";
+      const app = document.getElementById("app");
+      app.innerHTML = `<main class="auth-screen"><section class="auth-card">
+        <div class="auth-brand"><img src="/File_Anh_WebCNC/Logo_Delta_X.jpg" alt="Delta X"><div><div class="brand-name">DELTA X</div><span class="brand-sub">CNC PRODUCTION SYSTEM</span></div></div>
+        <div class="eyebrow">KHU VỰC XƯỞNG CNC</div>
+        <h1>${registering ? "Tạo tài khoản" : "Đăng nhập"}</h1>
+        <p class="auth-copy">${registering ? "Tạo tài khoản bằng email và mật khẩu để xem dữ liệu sản xuất." : "Đăng nhập để xem kế hoạch và dữ liệu sản xuất của xưởng."}</p>
+        <div class="auth-notice">Mọi tài khoản đăng ký đều có thể xem dữ liệu. Chỉ tài khoản được quản trị viên duyệt mới được chỉnh sửa.</div>
+        ${authSetup?.requiresAdminSetup ? `<div class="auth-notice">Cần thiết lập tài khoản quản trị đầu tiên bằng email đã cấu hình và mã thiết lập riêng.</div>` : ""}
+        ${errorMessage ? `<p class="auth-error" role="alert">${escapeHtml(errorMessage)}</p>` : ""}
+        ${registering ? `<form class="auth-form" autocomplete="on" onsubmit="submitRegistration(event)">
+          <div class="field"><label class="form-label" for="auth-email">Email</label><input id="auth-email" name="email" type="email" autocomplete="email" maxlength="254" required oninput="updateAdminSetupField()"></div>
+          <div class="field"><label class="form-label" for="auth-password">Mật khẩu</label><div class="auth-password-wrap"><input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" onclick="toggleAuthPassword('auth-password', this)">${icons.eye}</button></div><small class="auth-copy">Tối thiểu 8 ký tự.</small></div>
+          <div class="field"><label class="form-label" for="auth-password-confirm">Nhập lại mật khẩu</label><div class="auth-password-wrap"><input id="auth-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" onclick="toggleAuthPassword('auth-password-confirm', this)">${icons.eye}</button></div></div>
+          <div class="field" id="admin-setup-field" hidden><label class="form-label" for="auth-admin-code">Mã thiết lập quản trị</label><div class="auth-password-wrap"><input id="auth-admin-code" name="adminCode" type="password" autocomplete="off"><button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" onclick="toggleAuthPassword('auth-admin-code', this)">${icons.eye}</button></div><small class="auth-copy" id="admin-setup-help"></small></div>
+          <button class="button button-primary" type="submit">Tạo tài khoản</button>
+        </form>` : `<form class="auth-form" autocomplete="on" onsubmit="submitLogin(event)">
+          <div class="field"><label class="form-label" for="auth-email">Email</label><input id="auth-email" name="email" type="email" autocomplete="username" maxlength="254" required></div>
+          <div class="field"><label class="form-label" for="auth-password">Mật khẩu</label><div class="auth-password-wrap"><input id="auth-password" name="password" type="password" autocomplete="current-password" required><button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" onclick="toggleAuthPassword('auth-password', this)">${icons.eye}</button></div></div>
+          <button class="button button-primary" type="submit">Đăng nhập</button>
+        </form>`}
+        <p class="auth-copy">Nếu trình duyệt hỏi lưu mật khẩu, chọn lưu để lần sau có thể chọn tài khoản và tự điền. Ứng dụng không lưu mật khẩu trên máy chủ.</p>
+        <button class="auth-switch" type="button" onclick="renderAuthPage('${registering ? "login" : "register"}')">${registering ? "Đã có tài khoản? Đăng nhập" : "Chưa có tài khoản? Tạo tài khoản xem"}</button>
+      </section></main>`;
+      if (registering) updateAdminSetupField();
+    }
+    function toggleAuthPassword(inputId, button) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const showPassword = input.type === "password";
+      input.type = showPassword ? "text" : "password";
+      button.setAttribute("aria-label", showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+      button.setAttribute("aria-pressed", String(showPassword));
+      button.innerHTML = showPassword ? icons.eyeOff : icons.eye;
+    }
+    function updateAdminSetupField() {
+      const emailInput = document.getElementById("auth-email");
+      const setupField = document.getElementById("admin-setup-field");
+      const codeInput = document.getElementById("auth-admin-code");
+      const help = document.getElementById("admin-setup-help");
+      if (!emailInput || !setupField || !codeInput || !help) return;
+      const isAdminEmail = authSetup?.requiresAdminSetup &&
+        emailInput.value.trim().toLowerCase() === String(authSetup.adminEmail || "").toLowerCase();
+      setupField.hidden = !isAdminEmail;
+      codeInput.required = Boolean(isAdminEmail);
+      if (isAdminEmail && authSetup.localBootstrapCode) {
+        codeInput.value = authSetup.localBootstrapCode;
+        help.textContent = "Mã thiết lập cục bộ đã được điền tự động.";
+      } else if (isAdminEmail) {
+        codeInput.value = "";
+        help.textContent = "Lấy mã thiết lập từ log riêng của máy chủ; không chia sẻ mã này.";
+      }
+    }
+    async function submitLogin(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.elements.email.value,
+            password: form.elements.password.value
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Không thể đăng nhập.");
+        await initializeDatabase();
+      } catch (error) {
+        renderAuthPage("login", error.message);
+      }
+    }
+    async function submitRegistration(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.elements.password.value !== form.elements.passwordConfirm.value) {
+        renderAuthPage("register", "Mật khẩu nhập lại chưa khớp.");
+        return;
+      }
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.elements.email.value,
+            password: form.elements.password.value,
+            adminCode: form.elements.adminCode?.value || ""
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Không thể tạo tài khoản.");
+        await initializeDatabase();
+      } catch (error) {
+        renderAuthPage("register", error.message);
+      }
+    }
+    async function logout() {
+      try {
+        await fetch(`${API_BASE}/api/auth/logout`, { method: "POST" });
+      } catch (error) {
+        console.error("Không thể kết thúc phiên đăng nhập trên máy chủ.", error);
+      }
+      currentUser = null;
+      databaseReady = false;
+      pendingPlanEdits = Object.create(null);
+      await initializeDatabase();
+    }
+    async function requestEditAccess() {
+      try {
+        const response = await fetch(`${API_BASE}/api/access-request`, { method: "POST" });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Không thể gửi yêu cầu.");
+        showToast("Đã gửi yêu cầu chỉnh sửa đến quản trị viên.");
+        await initializeDatabase();
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+    async function renderAccessManagement() {
+      currentView = "access";
+      try {
+        const response = await fetch(`${API_BASE}/api/access-requests`, { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Không thể tải danh sách quyền.");
+        const users = result.users || [];
+        const pending = users.filter(user => user.editRequestStatus === "pending");
+        const editors = users.filter(user => user.role === "editor");
+        const renderRow = (user, canApprove) => `<article class="access-row"><div><strong>${escapeHtml(user.email)}</strong><small>${canApprove ? `Yêu cầu lúc ${escapeHtml(user.editRequestedAt || "—")}` : `Có quyền chỉnh sửa · tạo ${escapeHtml(user.createdAt || "—")}`}</small></div><div class="access-row-actions">${canApprove
+          ? `<button class="button button-primary" type="button" onclick="updateAccessRequest('${escapeHtml(user.id)}','approve')">Duyệt</button><button class="button button-secondary" type="button" onclick="updateAccessRequest('${escapeHtml(user.id)}','reject')">Từ chối</button>`
+          : `<button class="button button-secondary" type="button" onclick="updateAccessRequest('${escapeHtml(user.id)}','revoke')">Thu hồi quyền sửa</button>`}</div></article>`;
+        renderShell(`${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Quản lý quyền truy cập" }])}
+          <div class="page-heading"><div class="heading-copy"><div class="eyebrow">QUẢN TRỊ · PHÂN QUYỀN</div><h1>Quản lý quyền truy cập</h1><p class="page-description">Tài khoản đăng ký có quyền xem. Chỉ duyệt những người cần cập nhật dữ liệu sản xuất.</p></div><span class="muted-tag">${pending.length} YÊU CẦU CHỜ DUYỆT</span></div>
+          <section class="info-panel"><div class="panel-heading"><h3>Yêu cầu chỉnh sửa</h3></div>${pending.length ? `<div class="access-list">${pending.map(user => renderRow(user, true)).join("")}</div>` : `<div class="empty-note">Không có yêu cầu đang chờ.</div>`}</section>
+          <section class="info-panel" style="margin-top:16px"><div class="panel-heading"><h3>Tài khoản đang có quyền sửa</h3></div>${editors.length ? `<div class="access-list">${editors.map(user => renderRow(user, false)).join("")}</div>` : `<div class="empty-note">Chưa có tài khoản nào được duyệt quyền chỉnh sửa.</div>`}</section>`);
+      } catch (error) {
+        showDatabaseError(error.message);
+      }
+    }
+    async function updateAccessRequest(userId, action) {
+      try {
+        const response = await fetch(`${API_BASE}/api/access-requests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, action })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Không thể cập nhật quyền.");
+        showToast(action === "approve" ? "Đã cấp quyền chỉnh sửa." : action === "reject" ? "Đã từ chối yêu cầu." : "Đã thu hồi quyền chỉnh sửa.");
+        await renderAccessManagement();
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+    function showDatabaseError(message) {
+      const app = document.getElementById("app");
+      app.innerHTML = `<main class="page-wrap"><section class="blank-state" style="margin-top:10vh"><span class="blank-state-icon">${icons.box}</span><h3>Máy chủ chưa kết nối</h3><p>${escapeHtml(message)}<br>Ứng dụng sẽ không cho phép ghi dữ liệu khi kết nối chưa sẵn sàng.</p><button class="button button-primary" type="button" onclick="initializeDatabase()">Thử kết nối lại</button></section></main>`;
+    }
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    }
+    function formatNumber(value) { return Number(value || 0).toLocaleString("vi-VN"); }
+    function getPlan(id) { return state.plans.find(plan => plan.id === id); }
+    function pendingEditKey(planId, product, section, index, field) {
+      return `${planId}\u0000${product}\u0000${section}\u0000${index}\u0000${field}`;
+    }
+    function pendingEditsForPlan(planId) {
+      return Object.entries(pendingPlanEdits).filter(([, edit]) => edit.planId === planId);
+    }
+    function hasPendingEdits(planId) { return pendingEditsForPlan(planId).length > 0; }
+    function draftValue(planId, product, section, index, field, fallback) {
+      const edit = pendingPlanEdits[pendingEditKey(planId, product, section, index, field)];
+      return edit ? edit.value : fallback;
+    }
+    function draftNumber(planId, product, section, index, field, fallback) {
+      const rawValue = draftValue(planId, product, section, index, field, fallback);
+      if (String(rawValue).trim() === "") return fallback;
+      const value = Number(rawValue);
+      return Number.isFinite(value) && value >= 0 ? value : fallback;
+    }
+    function persistedPlanEditValue(plan, edit) {
+      if (edit.section === "cnc") {
+        return plan.progress?.[edit.product]?.[edit.index]?.[edit.field] ?? (edit.field === "completed" ? 0 : "");
+      }
+      const progress = plan.refining?.[edit.product]?.[edit.index]?.[edit.section];
+      return edit.field === "enabled" ? Boolean(progress?.enabled) : progress?.[edit.field] ?? (edit.field === "completed" ? 0 : "");
+    }
+    function renderPlanDraftControls(planId) {
+      const count = pendingEditsForPlan(planId).length;
+      const locked = hasShipmentForPlan(planId);
+      return `<div class="draft-controls"><span class="draft-status" id="draft-status">${locked ? "Đã bàn giao · khóa sửa" : count ? `${count} thay đổi chưa lưu` : "Đã cập nhật"}</span><button class="button button-secondary" id="draft-save-button" type="button" ${count && !locked ? "" : "disabled"} onclick="savePlanDetailEdits('${escapeHtml(planId)}')">Cập nhật dữ liệu</button></div>`;
+    }
+    function refreshPlanDraftControls(planId) {
+      const count = pendingEditsForPlan(planId).length;
+      const locked = hasShipmentForPlan(planId);
+      const status = document.getElementById("draft-status");
+      const button = document.getElementById("draft-save-button");
+      if (status) status.textContent = locked ? "Đã bàn giao · khóa sửa" : count ? `${count} thay đổi chưa lưu` : "Đã cập nhật";
+      if (button) button.disabled = count === 0 || locked;
+    }
+    function stagePlanEdit(planId, product, section, index, field, value, rerender = false, input = null) {
+      const plan = getPlan(planId);
+      if (!plan) return;
+      if (hasShipmentForPlan(planId)) {
+        showToast("Kế hoạch đã bàn giao; tiến độ được khóa để giữ nguyên dữ liệu đối chiếu.");
+        renderPlanDetail();
+        return;
+      }
+      const edit = { planId, product, section, index, field, value };
+      const key = pendingEditKey(planId, product, section, index, field);
+      const persistedValue = persistedPlanEditValue(plan, edit);
+      let unchanged = field === "completed"
+        ? String(value).trim() !== "" && Number(value) === Number(persistedValue || 0)
+        : field === "enabled"
+          ? Boolean(value) === Boolean(persistedValue)
+          : String(value ?? "") === String(persistedValue ?? "");
+      if (field === "completed" && String(value).trim() !== "") {
+        const maximum = getRows(plan, product).find(row => row.index === index)?.planned;
+        if (Number.isFinite(maximum) && Number(value) > maximum) {
+          value = String(maximum);
+          if (input) input.value = value;
+          else if (document.activeElement?.type === "number") document.activeElement.value = value;
+          showToast(`Số đã làm không được vượt quá dự định ${formatNumber(maximum)}.`);
+          unchanged = Number(value) === Number(persistedValue || 0);
+        }
+      }
+      edit.value = value;
+      if (unchanged) delete pendingPlanEdits[key];
+      else pendingPlanEdits[key] = edit;
+      if (rerender) renderPlanDetail();
+      else refreshPlanDraftControls(planId);
+    }
+    function savePlanDetailEdits(planId) {
+      const plan = getPlan(planId);
+      const entries = pendingEditsForPlan(planId);
+      if (!plan || !entries.length) return;
+      if (hasShipmentForPlan(planId)) {
+        showToast("Kế hoạch đã bàn giao; không thể cập nhật tiến độ.");
+        renderPlanDetail();
+        return;
+      }
+      const prepared = [];
+      for (const [key, edit] of entries) {
+        let value = edit.value;
+        if (edit.field === "completed") {
+          if (String(value).trim() === "") {
+            showToast("Số lượng hoàn thành không được để trống.");
+            return;
+          }
+          value = Number(value);
+          if (!Number.isInteger(value) || value < 0) {
+            showToast("Số lượng hoàn thành phải là số nguyên không âm. Hãy kiểm tra các ô đang sửa.");
+            return;
+          }
+          const maximum = getRows(plan, edit.product).find(row => row.index === edit.index)?.planned;
+          if (!Number.isFinite(maximum) || value > maximum) {
+            showToast(`Số đã làm không được vượt quá dự định ${formatNumber(maximum)}.`);
+            return;
+          }
+        } else if (edit.field === "enabled") {
+          value = Boolean(value);
+        } else if (edit.section === "cnc" && edit.field === "note") {
+          value = String(value ?? "");
+        } else {
+          showToast("Có thay đổi không hợp lệ; vui lòng tải lại bảng và thử lại.");
+          return;
+        }
+        prepared.push({ key, edit, value });
+      }
+      prepared.forEach(({ key, edit, value }) => {
+        if (edit.section === "cnc") {
+          const progress = ensureProgress(plan, edit.product);
+          if (!progress[edit.index]) progress[edit.index] = { completed: 0, note: "", type: "Tự gia công" };
+          progress[edit.index][edit.field] = value;
+        } else {
+          if (!plan.refining) plan.refining = {};
+          if (!plan.refining[edit.product]) plan.refining[edit.product] = {};
+          if (!plan.refining[edit.product][edit.index]) plan.refining[edit.product][edit.index] = {};
+          if (!plan.refining[edit.product][edit.index][edit.section]) {
+            plan.refining[edit.product][edit.index][edit.section] = { enabled: false, completed: 0, note: "" };
+          }
+          plan.refining[edit.product][edit.index][edit.section][edit.field] = value;
+        }
+        delete pendingPlanEdits[key];
+      });
+      saveState();
+      if (activePlanId === planId && currentView === "plan-detail") renderPlanDetail();
+      showToast(`Đã cập nhật ${prepared.length} thay đổi vào kế hoạch.`);
+    }
+    function productLabel(product, plan) {
+      const variant = XS_VARIANTS.find(item => item.key === product);
+      return variant ? `XS ${variant.model}${plan ? ` · ${plan.axes?.[product] || "4 trục"}` : ""}` : product;
+    }
+    function totalForPlan(plan) { return PRODUCT_NAMES.reduce((sum, product) => sum + Number(plan.quantities[product] || 0), 0); }
+    function productsForPlan(plan) { return PRODUCT_NAMES.filter(product => Number(plan.quantities[product] || 0) > 0); }
+    function progressForPlan(plan) {
+      const rows = Object.values(plan.progress || {});
+      const planned = rows.reduce((sum, row) => sum + Number(row.planned || 0), 0);
+      const completed = rows.reduce((sum, row) => sum + Math.min(Number(row.completed || 0), Number(row.planned || 0)), 0);
+      return planned ? Math.round(completed / planned * 100) : 0;
+    }
+    function renderShell(content, breadcrumb = "") {
+      const roleLabel = currentUser?.role === "admin" ? "Quản trị viên"
+        : currentUser?.role === "editor" ? "Được phép chỉnh sửa"
+          : currentUser?.editRequestStatus === "pending" ? "Chờ duyệt quyền sửa" : "Chỉ xem";
+      const accessAction = currentUser?.role === "admin"
+        ? `<button class="button button-secondary" type="button" onclick="navigate('access')">Quản lý quyền</button>`
+        : currentUser?.role === "viewer"
+          ? `<button class="button button-secondary" type="button" ${currentUser.editRequestStatus === "pending" ? "disabled" : ""} onclick="requestEditAccess()">${currentUser.editRequestStatus === "pending" ? "Đang chờ duyệt" : "Yêu cầu quyền sửa"}</button>`
+          : "";
+      const app = document.getElementById("app");
+      app.innerHTML = `
+        <header class="topbar">
+          <button class="brand" type="button" onclick="navigate('dashboard')" aria-label="Về trang tổng quan">
+            <span class="brand-mark"><img src="/File_Anh_WebCNC/Logo_Delta_X.jpg" alt="" aria-hidden="true"></span>
+            <span><span class="brand-name">DELTA X</span><span class="brand-sub">CNC PRODUCTION SYSTEM</span></span>
+          </button>
+          <div class="topbar-right">
+            <div class="plant-status"><span class="status-dot"></span>XƯỞNG CNC · ĐANG HOẠT ĐỘNG</div>
+            <div class="user-chip"><span class="user-avatar">${escapeHtml((currentUser?.email || "SX").slice(0, 2).toUpperCase())}</span><span>${escapeHtml(currentUser?.email || "")}</span></div>
+            <div class="auth-account-actions"><span class="role-tag">${roleLabel}</span>${accessAction}<button class="button button-quiet" type="button" onclick="logout()">Đăng xuất</button></div>
+          </div>
+        </header>
+        <main class="page-wrap">${breadcrumb}${content}<footer class="footer"><span>DELTA X · HỆ THỐNG QUẢN LÝ SẢN XUẤT · V1.0</span><span>${storageMode === "mongodb" ? "MONGODB ATLAS · DỮ LIỆU ĐỒNG BỘ" : "SQLITE · MÁY CHỦ NÀY"} · ${roleLabel.toUpperCase()}</span></footer></main>`;
+      applyRolePermissions(app);
+    }
+    function applyRolePermissions(root = document.getElementById("app")) {
+      if (!root || ["admin", "editor"].includes(currentUser?.role)) return;
+      const mutatingHandler = /(?:openPlanModal|savePlan|deletePlan|savePlanDetailEdits|updatePart|setPartToMaximum|setAllPartsToMaximum|updateRefining|updateBom|allocateMachine|saveAluminumReceipt|deleteAluminumReceipt|renderShipmentForm|saveShipment|deleteShipment)\s*\(/;
+      root.querySelectorAll("button, input, select, textarea").forEach(control => {
+        const handler = [
+          control.getAttribute("onclick"),
+          control.getAttribute("oninput"),
+          control.getAttribute("onchange"),
+          control.closest("form")?.getAttribute("onsubmit")
+        ].filter(Boolean).join(" ");
+        if (mutatingHandler.test(handler)) {
+          control.disabled = true;
+          control.setAttribute("aria-disabled", "true");
+        }
+      });
+    }
+    function breadcrumb(items) {
+      if (!items.length) return "";
+      return `<nav class="breadcrumb" aria-label="Điều hướng"><button class="back-button" type="button" onclick="goBack()" aria-label="Quay lại trang trước"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M7.5 10H17"/></svg>Quay lại</button>${items.map((item, index) => {
+        const last = index === items.length - 1;
+        return `${index ? '<span aria-hidden="true">/</span>' : ""}${last ? `<span class="current">${escapeHtml(item.label)}</span>` : `<button class="breadcrumb-link" type="button" onclick="${item.action}">${escapeHtml(item.label)}</button>`}`;
+      }).join("")}</nav>`;
+    }
+    function goBack() {
+      if (currentView === "product-detail") {
+        renderProducts();
+        return;
+      }
+      if (currentView === "plan-detail") {
+        navigate("plans");
+        return;
+      }
+      if (currentView === "inventory-shipment-form" || currentView === "inventory-shipment-history") {
+        renderFinishedStock();
+        return;
+      }
+      if (currentView === "inventory-aluminum" || currentView === "inventory-finished") {
+        renderInventory();
+        return;
+      }
+      if (currentView === "access") {
+        navigate("dashboard");
+        return;
+      }
+      navigate("dashboard");
+    }
+    function renderDashboard() {
+      const plans = [...state.plans].sort((a, b) => b.year - a.year || b.month - a.month);
+      const latest = plans.slice(0, 3);
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      const thisMonth = plans.find(plan => plan.month === currentMonth && plan.year === currentYear);
+      const machinesAssigned = Object.values(state.allocations || {}).filter(Boolean).length;
+      const body = `
+        <section class="hero"><div class="hero-content">
+          <div class="eyebrow">HỆ THỐNG ĐIỀU HÀNH · CNC / ${String(currentYear)}</div>
+          <h1>Chính xác trong từng chi tiết.<br>Hiệu quả trên từng máy.</h1>
+          <p>Trung tâm quản lý kế hoạch, vật tư và tiến độ gia công CNC. Mọi dữ liệu sản xuất được tập trung, rõ ràng và sẵn sàng cho ca vận hành.</p>
+        </div></section>
+        <div class="section-heading"><h2>Phân hệ sản xuất</h2><span class="section-kicker">CHỌN MỘT PHÂN HỆ ĐỂ BẮT ĐẦU</span></div>
+        <section class="module-grid" aria-label="Các phân hệ">
+          <button class="module-card featured" type="button" onclick="navigate('plans')"><span class="module-top"><span class="module-icon">${icons.calendar}</span><span class="module-arrow">↗</span></span><h3>Kế hoạch tháng</h3><p>Tạo kế hoạch sản xuất và theo dõi định mức linh kiện CNC.</p></button>
+          <button class="module-card" type="button" onclick="navigate('inventory')"><span class="module-top"><span class="module-icon">${icons.box}</span><span class="module-arrow">↗</span></span><h3>Kho & xuất hàng</h3><p>Kiểm soát tồn kho phôi, thành phẩm và tình trạng giao hàng.</p></button>
+          <button class="module-card" type="button" onclick="navigate('products')"><span class="module-top"><span class="module-icon">${icons.image}</span><span class="module-arrow">↗</span></span><h3>Sản phẩm & chi tiết</h3><p>Tra cứu danh mục sản phẩm và cấu trúc linh kiện tham khảo.</p></button>
+          <button class="module-card" type="button" onclick="navigate('machines')"><span class="module-top"><span class="module-icon">${icons.machine}</span><span class="module-arrow">↗</span></span><h3>Máy CNC</h3><p>Phân bổ sản phẩm cho 4 máy và xem trạng thái vận hành.</p></button>
+        </section>
+        <section class="dashboard-lower">
+          <div class="info-panel"><div class="panel-heading"><h3>Kế hoạch gần đây</h3><button class="text-link" type="button" onclick="navigate('plans')">Xem tất cả →</button></div>
+            ${latest.length ? latest.map(plan => `<div class="quick-row"><div><div class="quick-name">${escapeHtml(MONTHS[plan.month - 1])} ${plan.year}</div><div class="quick-sub">${productsForPlan(plan).map(product => productLabel(product, plan)).join(" · ") || "Chưa có sản phẩm"}</div></div><div class="quick-number">${formatNumber(totalForPlan(plan))}<span style="font-size:10px;color:var(--muted);font-family:'DM Sans',sans-serif"> bộ</span></div></div>`).join("") : `<div class="empty-note">Chưa có kế hoạch sản xuất. Tạo kế hoạch tháng đầu tiên để bắt đầu theo dõi.</div>`}
+          </div>
+          <div class="info-panel"><div class="panel-heading"><h3>Tổng quan xưởng</h3><span class="muted-tag">${String(currentMonth).padStart(2, "0")}/${currentYear}</span></div>
+            <div class="quick-row"><div><div class="quick-name">Kế hoạch tháng này</div><div class="quick-sub">${thisMonth ? "Đã thiết lập mục tiêu sản xuất" : "Chưa có kế hoạch tháng"}</div></div><div class="quick-number">${thisMonth ? `${formatNumber(totalForPlan(thisMonth))}<span style="font-size:10px;color:var(--muted);font-family:'DM Sans',sans-serif"> bộ</span>` : "—"}</div></div>
+            <div class="quick-row"><div><div class="quick-name">Máy có phân bổ</div><div class="quick-sub">Trong tổng số 4 máy CNC</div></div><div class="quick-number">${machinesAssigned}<span style="font-size:10px;color:var(--muted);font-family:'DM Sans',sans-serif"> / 4</span></div></div>
+          </div>
+        </section>`;
+      renderShell(body);
+    }
+    function renderPlans() {
+      const plans = [...state.plans].sort((a, b) => b.year - a.year || b.month - a.month);
+      const cards = plans.length ? `<div class="plan-list">${plans.map(plan => {
+        const products = productsForPlan(plan);
+        const progress = progressForPlan(plan);
+        return `<article class="plan-card">
+          <div class="plan-card-head"><div><div class="plan-month">${escapeHtml(MONTHS[plan.month - 1])}</div><div class="plan-year">${plan.year} · Kế hoạch sản xuất</div></div><div class="plan-total">${formatNumber(totalForPlan(plan))}<small>TỔNG KẾ HOẠCH · BỘ</small></div></div>
+          <div class="plan-progress" title="Tiến độ hoàn thành ${progress}%"><span style="width:${progress}%"></span></div>
+          <div class="plan-product-list">${products.map(product => `<span class="plan-product-pill">${escapeHtml(productLabel(product, plan))} · ${formatNumber(plan.quantities[product])}</span>`).join("")}</div>
+          <div class="plan-card-foot"><span class="subtle">Tiến độ gia công ${progress}%</span><div class="plan-actions"><button class="danger-link" type="button" onclick="deletePlan('${plan.id}')">Xóa</button><button class="text-link" type="button" onclick="openPlan('${plan.id}')">Mở kế hoạch →</button></div></div>
+        </article>`;
+      }).join("")}</div>` : `<div class="blank-state"><span class="blank-state-icon">${icons.calendar}</span><h3>Chưa có kế hoạch tháng</h3><p>Tạo kế hoạch để bắt đầu lập định mức vật tư và theo dõi tiến độ gia công.</p><button class="button button-primary" type="button" onclick="openPlanModal()">${icons.plus} Tạo kế hoạch tháng</button></div>`;
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kế hoạch tháng" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">LẬP KẾ HOẠCH · THEO DÕI TIẾN ĐỘ</div><h1>Kế hoạch tháng</h1><p class="page-description">Thiết lập mục tiêu sản xuất theo tháng và theo dõi định mức phôi cho từng dòng sản phẩm.</p></div><button class="button button-primary" type="button" onclick="openPlanModal()">${icons.plus} Tạo kế hoạch tháng</button></div>
+        ${cards}`;
+      renderShell(body);
+    }
+    function openPlan(id) {
+      activePlanId = id;
+      activeProduct = null;
+      activeProcess = "cnc";
+      currentView = "plan-detail";
+      renderPlanDetail();
+    }
+    function deletePlan(id) {
+      const plan = getPlan(id);
+      if (!plan) return;
+      if (hasPendingEdits(id)) {
+        showToast("Kế hoạch đang có thay đổi chưa cập nhật. Hãy lưu dữ liệu trước khi xóa.");
+        return;
+      }
+      if (hasShipmentForPlan(id)) {
+        showToast("Không thể xóa kế hoạch đã có phiếu bàn giao để bảo toàn lịch sử đối chiếu.");
+        return;
+      }
+      const title = `${MONTHS[plan.month - 1]} ${plan.year}`;
+      if (!window.confirm(`Xóa kế hoạch ${title}? Dữ liệu kế hoạch và tiến độ gia công của tháng này sẽ bị xóa vĩnh viễn.`)) return;
+      state.plans = state.plans.filter(item => item.id !== id);
+      saveState();
+      activePlanId = null;
+      activeProduct = null;
+      showToast(`Đã xóa kế hoạch ${title}.`);
+      if (currentView === "plan-detail") navigate("plans");
+      else renderPlans();
+    }
+    function ensureProgress(plan, product) {
+      if (!plan.progress) plan.progress = {};
+      if (!plan.progress[product]) {
+        plan.progress[product] = {};
+        (PRODUCT_BOM[product] || []).forEach((part, index) => {
+          plan.progress[product][index] = { completed: 0, note: "", type: "Tự gia công" };
+        });
+      }
+      return plan.progress[product];
+    }
+    function getRows(plan, product) {
+      const progress = ensureProgress(plan, product);
+      const units = Number(plan.quantities[product] || 0);
+      const variant = XS_VARIANTS.find(item => item.key === product);
+      const selectedAxis = Number((plan.axes?.[product] || "4 trục").split(" ")[0]);
+      return (PRODUCT_BOM[product] || []).map((part, index) => {
+        const source = variant ? XS_BOM[index] : part;
+      const perUnit = variant && source.axis ? 1 : part.perUnit;
+      const blank = part.blank;
+      return {
+        ...part,
+        index,
+        perUnit: Number(perUnit || 0),
+        blank: Number(blank || 0),
+        planned: units * Number(perUnit || 0),
+        blankTotal: units * Number(perUnit || 0) * Number(blank || 0),
+        completed: Number(progress[index]?.completed || 0),
+        type: progress[index]?.type || "Tự gia công",
+        note: progress[index]?.note || source.note || ""
+      };
+      }).filter((row, index) => {
+      if (!variant) return true;
+      const source = XS_BOM[index];
+      const modelMatches = !source.model || source.model === variant.size;
+      const axisMatches = !source.axis || source.axis <= selectedAxis;
+      return modelMatches && axisMatches;
+      });
+    }
+    function calculateGroupBlankTotals(rows) {
+      const groups = {};
+      rows.forEach(row => {
+        if (!row.aluminum || row.blankTotal <= 0) return;
+        const group = groups[row.aluminum] || (groups[row.aluminum] = { total: 0, shared: {} });
+        group.total += row.blankTotal;
+        if (row.sharedStockGroup) {
+          const shared = group.shared[row.sharedStockGroup] || (group.shared[row.sharedStockGroup] = []);
+          shared.push(row.blankTotal);
+        }
+      });
+      return Object.fromEntries(Object.entries(groups).map(([aluminum, group]) => {
+        const duplicatedSharedUsage = Object.values(group.shared).reduce((sum, values) => {
+          return sum + values.reduce((valueSum, value) => valueSum + value, 0) - Math.max(...values);
+        }, 0);
+        return [aluminum, Math.max(group.total - duplicatedSharedUsage, 0)];
+      }));
+    }
+    function renderPlanDetail() {
+      const plan = getPlan(activePlanId);
+      if (!plan) { navigate("plans"); return; }
+      const products = productsForPlan(plan);
+      if (!products.includes(activeProduct)) activeProduct = products[0] || null;
+      const tiles = products.length ? `<section class="product-grid">${products.map(product => `<button type="button" class="product-tile ${activeProduct === product ? "selected" : ""}" onclick="selectProduct('${escapeHtml(product)}')"><span class="product-glyph">SẢN PHẨM</span><strong>${escapeHtml(productLabel(product, plan))}</strong><small>Kế hoạch: ${formatNumber(plan.quantities[product])} bộ</small></button>`).join("")}</section>` : "";
+      const tabs = activeProduct ? `<nav class="detail-tabs" aria-label="Công đoạn sản xuất">
+        <button type="button" class="detail-tab ${activeProcess === "cnc" ? "selected" : ""}" aria-pressed="${activeProcess === "cnc"}" onclick="selectProcess('cnc')">CNC <small>${getRows(plan, activeProduct).length} chi tiết</small></button>
+        <button type="button" class="detail-tab ${activeProcess === "taro" ? "selected" : ""}" aria-pressed="${activeProcess === "taro"}" onclick="selectProcess('taro')">Taro <small>${refiningSummary(plan, activeProduct, "taro").applicable} áp dụng</small></button>
+        <button type="button" class="detail-tab ${activeProcess === "deburr" ? "selected" : ""}" aria-pressed="${activeProcess === "deburr"}" onclick="selectProcess('deburr')">Gọt via <small>${refiningSummary(plan, activeProduct, "deburr").applicable} áp dụng</small></button>
+      </nav>` : "";
+      const detail = activeProduct
+        ? `${tabs}${activeProcess === "cnc" ? renderBomTable(plan, activeProduct) : renderRefiningTable(plan, activeProduct, activeProcess)}`
+        : `<div class="blank-state"><h3>Chưa có sản phẩm trong kế hoạch</h3><p>Chỉnh sửa kế hoạch tháng và nhập số lượng lớn hơn 0 cho ít nhất một sản phẩm.</p></div>`;
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kế hoạch tháng", action: "navigate('plans')" }, { label: `${MONTHS[plan.month - 1]} ${plan.year}` }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">KẾ HOẠCH SẢN XUẤT · ${String(plan.month).padStart(2, "0")}/${plan.year}</div><h1>${escapeHtml(MONTHS[plan.month - 1])} ${plan.year}</h1><p class="page-description">Chọn sản phẩm để xem định mức vật tư CNC. Số lượng dự định được tự động tính theo sản lượng kế hoạch.</p>
+          <div class="plan-summary"><span class="summary-chip">Tổng kế hoạch <strong>${formatNumber(totalForPlan(plan))} bộ</strong></span><span class="summary-chip">Dòng sản phẩm <strong>${products.length}</strong></span></div>
+        </div><div class="plan-actions"><button class="button button-danger" type="button" onclick="deletePlan('${plan.id}')">Xóa kế hoạch</button><button class="button button-secondary" type="button" onclick="openPlanModal('${plan.id}')">Chỉnh sửa kế hoạch</button></div></div>
+        ${tiles}${detail}`;
+      renderShell(body, "");
+      refreshPlanDraftControls(plan.id);
+    }
+    function renderBomTable(plan, product) {
+      const rows = getRows(plan, product);
+      const variant = XS_VARIANTS.find(item => item.key === product);
+      const locked = hasShipmentForPlan(plan.id);
+      const groupTotals = calculateGroupBlankTotals(rows);
+      const seen = new Set();
+      const bodyRows = rows.map(row => {
+        const showTotal = !seen.has(row.aluminum);
+        seen.add(row.aluminum);
+        const completed = draftNumber(plan.id, product, "cnc", row.index, "completed", row.completed);
+        const note = draftValue(plan.id, product, "cnc", row.index, "note", row.note);
+        const isComplete = row.planned > 0 && completed >= row.planned;
+        const completionStatus = isComplete
+          ? `<span class="completion-status"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3.2 3.2L13 4.5"/></svg>ĐỦ</span>`
+          : `<span class="completion-pending">CÒN ${formatNumber(Math.max(row.planned - completed, 0))}</span>`;
+        return `<tr class="${isComplete ? "row-complete" : ""}">
+          <td class="row-number">${String(row.stt || row.index + 1).padStart(2, "0")}</td>
+          <td><span class="aluminum">${escapeHtml(row.aluminum)}</span></td>
+          <td class="cell-name">${escapeHtml(row.common)}</td>
+          <td><span class="calculated">${formatNumber(row.planned)}</span></td>
+          <td><span class="calculated">${formatNumber(row.blankTotal)}</span></td>
+          <td class="group-total">${showTotal ? `${formatNumber(groupTotals[row.aluminum])} <small style="color:var(--muted);font:400 9px 'DM Sans',sans-serif">phôi</small>` : '<span style="color:#536057">↳</span>'}</td>
+          <td><div class="completion-cell"><input class="cell-input" type="number" min="0" max="${row.planned}" step="1" value="${escapeHtml(String(draftValue(plan.id, product, "cnc", row.index, "completed", row.completed)))}" aria-label="Số lượng đã gia công ${escapeHtml(row.common)}" ${locked ? "disabled" : ""} oninput="updatePart('${plan.id}','${escapeHtml(product)}',${row.index},'completed',this.value,this)"><button class="max-button" type="button" ${locked ? "disabled" : ""} aria-label="Đặt bằng dự định cho ${escapeHtml(row.common)}" onclick="setPartToMaximum('${plan.id}','${escapeHtml(product)}','cnc',${row.index},this)">MAX</button>${completionStatus}</div></td>
+          <td><input class="cell-note" type="text" maxlength="160" placeholder="Thêm ghi chú..." value="${escapeHtml(String(note))}" aria-label="Ghi chú ${escapeHtml(row.common)}" ${locked ? "disabled" : ""} oninput="updatePart('${plan.id}','${escapeHtml(product)}',${row.index},'note',this.value)"></td>
+        </tr>`;
+      }).join("");
+      const totalBlanks = Object.values(groupTotals).reduce((sum, amount) => sum + amount, 0);
+      const aluminumKinds = Object.keys(groupTotals).length;
+      const completion = rows.reduce((sum, row) => sum + Math.min(draftNumber(plan.id, product, "cnc", row.index, "completed", row.completed), row.planned), 0);
+      const planned = rows.reduce((sum, row) => sum + row.planned, 0);
+      const activeRows = rows.filter(row => row.planned > 0);
+      const completedRows = activeRows.filter(row => draftNumber(plan.id, product, "cnc", row.index, "completed", row.completed) >= row.planned).length;
+      return `<section class="table-panel">
+        <div class="table-toolbar"><div><h3>Chi tiết vật tư CNC · ${escapeHtml(productLabel(product, plan))}</h3><small>${rows.length} loại chi tiết · ${formatNumber(planned)} chi tiết cần gia công</small></div><div class="table-toolbar-actions"><button class="max-all-button" type="button" ${locked || !activeRows.length ? "disabled" : ""} title="Đặt số đã gia công bằng số dự định cho toàn bộ chi tiết của sản phẩm này" onclick="setAllPartsToMaximum('${escapeHtml(plan.id)}','${escapeHtml(product)}')">MAX TẤT CẢ</button><span class="muted-tag">${planned ? Math.round(completion / planned * 100) : 0}% HOÀN THÀNH · ${completedRows}/${activeRows.length} LINH KIỆN ĐỦ</span>${renderPlanDraftControls(plan.id)}</div></div>
+        <div class="table-scroll"><table><thead><tr><th>STT</th><th>Loại nhôm</th><th>Chi tiết gia công</th><th>Dự định</th><th>Phôi sử dụng</th><th>Tổng phôi / nhóm</th><th>Đã gia công</th><th>Ghi chú</th></tr></thead><tbody>${bodyRows}</tbody></table></div>
+        <div class="table-footer"><span><span class="legend-dot"></span>Dòng xanh và dấu tick nghĩa là đã gia công đủ dự định</span><span>${aluminumKinds} nhóm nhôm · Tổng ${formatNumber(totalBlanks)} phôi</span></div>
+      </section>
+      <div class="notice"><strong>Quy tắc tính:</strong> Tổng phôi mỗi loại nhôm được cộng từ phôi sử dụng của các chi tiết trong kế hoạch.${variant ? " Các cặp căng đai dài/ngắn và đỡ căng đai dài/ngắn được tính chung một lần phôi, không cộng trùng phần dùng chung." : ""}</div>`;
+    }
+    function previewBom(input, field, product, index) {
+      const value = Number(input.value);
+      if (!Number.isFinite(value) || value < 0) return;
+      const plan = getPlan(activePlanId);
+      if (!plan) return;
+      const rows = getRows(plan, product);
+      const target = rows.find(row => row.index === index);
+      if (target) {
+        target[field] = value;
+        target.blankTotal = target.planned * (field === "blank" ? value : target.blank);
+      }
+      // Re-render when the edit is committed so grouped aluminum totals stay in sync.
+      input.dataset.pendingValue = String(value);
+    }
+    function updateBom(product, index, field, value) {
+      const next = Number(value);
+      if (!Number.isFinite(next) || next < 0) { showToast("Vui lòng nhập số không âm."); renderPlanDetail(); return; }
+      PRODUCT_BOM[product][index][field] = next;
+      state.bom = PRODUCT_BOM;
+      saveState();
+      renderPlanDetail();
+      showToast("Định mức phôi đã được cập nhật.");
+    }
+    function updatePart(planId, product, index, field, value, input) {
+      stagePlanEdit(planId, product, "cnc", index, field, value, false, input);
+    }
+    function setPartToMaximum(planId, product, section, index, button) {
+      const plan = getPlan(planId);
+      if (!plan) return;
+      const row = getRows(plan, product).find(item => item.index === index);
+      if (!row) return;
+      const input = button.closest("tr")?.querySelector('input[type="number"]');
+      if (input) input.value = String(row.planned);
+      stagePlanEdit(planId, product, section, index, "completed", String(row.planned));
+    }
+    function setAllPartsToMaximum(planId, product) {
+      const plan = getPlan(planId);
+      if (!plan) return;
+      if (hasShipmentForPlan(planId)) {
+        showToast("Kế hoạch đã bàn giao; tiến độ được khóa để giữ nguyên dữ liệu đối chiếu.");
+        renderPlanDetail();
+        return;
+      }
+      const rows = getRows(plan, product).filter(row => row.planned > 0);
+      const rowsToMax = rows.filter(row => draftNumber(planId, product, "cnc", row.index, "completed", row.completed) < row.planned);
+      if (!rowsToMax.length) {
+        showToast(rows.length ? "Tất cả chi tiết đã đạt số dự định." : "Sản phẩm này chưa có chi tiết cần gia công.");
+        return;
+      }
+      rowsToMax.forEach(row => {
+        stagePlanEdit(planId, product, "cnc", row.index, "completed", String(row.planned));
+      });
+      renderPlanDetail();
+      showToast(`Đã điền MAX cho ${rowsToMax.length} chi tiết. Nhấn Cập nhật dữ liệu để lưu.`);
+    }
+    function selectProduct(product) { activeProduct = product; activeProcess = "cnc"; renderPlanDetail(); }
+    function selectProcess(process) { activeProcess = process; renderPlanDetail(); }
+    function refiningPart(plan, product, index, process) {
+      return plan.refining?.[product]?.[index]?.[process] || { enabled: false, completed: 0, note: "" };
+    }
+    function refiningSummary(plan, product, process) {
+      const rows = getRows(plan, product);
+      const activeRows = rows.filter(row => Boolean(draftValue(plan.id, product, process, row.index, "enabled", refiningPart(plan, product, row.index, process).enabled)) && row.planned > 0);
+      const planned = activeRows.reduce((sum, row) => sum + row.planned, 0);
+      const completed = activeRows.reduce((sum, row) => {
+        const saved = refiningPart(plan, product, row.index, process).completed;
+        return sum + Math.min(draftNumber(plan.id, product, process, row.index, "completed", Number(saved || 0)), row.planned);
+      }, 0);
+      const completedRows = activeRows.filter(row => {
+        const saved = refiningPart(plan, product, row.index, process).completed;
+        return draftNumber(plan.id, product, process, row.index, "completed", Number(saved || 0)) >= row.planned;
+      }).length;
+      return { applicable: activeRows.length, planned, completed, completedRows, percent: planned ? Math.round(completed / planned * 100) : 0 };
+    }
+    function renderRefiningTable(plan, product, process) {
+      const rows = getRows(plan, product);
+      const label = process === "taro" ? "Taro" : "Gọt via";
+      const locked = hasShipmentForPlan(plan.id);
+      const summary = refiningSummary(plan, product, process);
+      const bodyRows = rows.map(row => {
+        const progress = refiningPart(plan, product, row.index, process);
+        const enabled = Boolean(draftValue(plan.id, product, process, row.index, "enabled", progress.enabled));
+        const completed = draftNumber(plan.id, product, process, row.index, "completed", Number(progress.completed || 0));
+        const isComplete = enabled && row.planned > 0 && completed >= row.planned;
+        const status = !enabled
+          ? `<span class="process-disabled">CHƯA ÁP DỤNG</span>`
+          : isComplete
+            ? `<span class="completion-status"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3.2 3.2L13 4.5"/></svg>ĐỦ</span>`
+            : `<span class="completion-pending">CÒN ${formatNumber(Math.max(row.planned - completed, 0))}</span>`;
+        return `<tr class="${isComplete ? "row-complete" : ""}">
+          <td class="row-number">${String(row.stt || row.index + 1).padStart(2, "0")}</td>
+          <td class="cell-name">${escapeHtml(row.common)}</td>
+          <td><span class="calculated">${formatNumber(row.planned)}</span></td>
+          <td><label class="process-choice"><input class="process-checkbox" type="checkbox" ${enabled ? "checked" : ""} ${locked ? "disabled" : ""} aria-label="Áp dụng ${label} cho ${escapeHtml(row.common)}" onchange="updateRefining('${plan.id}','${escapeHtml(product)}',${row.index},'${process}','enabled',this.checked,true)">Áp dụng</label></td>
+          <td><span class="calculated">${enabled ? formatNumber(row.planned) : "—"}</span></td>
+          <td><div class="completion-cell"><input class="cell-input" type="number" min="0" max="${row.planned}" step="1" value="${escapeHtml(String(draftValue(plan.id, product, process, row.index, "completed", Number(progress.completed || 0))))}" ${enabled && !locked ? "" : "disabled"} aria-label="Số lượng ${label} đã làm ${escapeHtml(row.common)}" oninput="updateRefining('${plan.id}','${escapeHtml(product)}',${row.index},'${process}','completed',this.value,false,this)"><button class="max-button" type="button" ${enabled && !locked ? "" : "disabled"} aria-label="Đặt bằng dự định cho ${escapeHtml(row.common)}" onclick="setPartToMaximum('${plan.id}','${escapeHtml(product)}','${process}',${row.index},this)">MAX</button>${status}</div></td>
+        </tr>`;
+      }).join("");
+      return `<section class="table-panel">
+        <div class="table-toolbar"><div><h3>Chi tiết ${label} · ${escapeHtml(productLabel(product, plan))}</h3><small>Chọn linh kiện cần ${label.toLowerCase()}; dự định tự lấy theo số lượng CNC</small></div><div class="table-toolbar-actions"><span class="muted-tag">${summary.percent}% HOÀN THÀNH · ${summary.completedRows}/${summary.applicable} LINH KIỆN ĐỦ</span>${renderPlanDraftControls(plan.id)}</div></div>
+        <div class="table-scroll"><table class="refining-table"><thead><tr><th>STT</th><th>Chi tiết gia công</th><th>Số lượng CNC</th><th>Áp dụng</th><th>Dự định ${label}</th><th>Đã làm</th></tr></thead><tbody>${bodyRows}</tbody></table></div>
+        <div class="table-footer"><span><span class="legend-dot"></span>Chỉ linh kiện được chọn mới được tính vào tiến độ ${label}</span><span>${summary.applicable} linh kiện áp dụng · ${formatNumber(summary.planned)} chi tiết cần làm</span></div>
+      </section>
+      <div class="notice"><strong>Cách dùng:</strong> Tích “Áp dụng” cho linh kiện cần ${label}. Dự định được lấy từ số lượng chi tiết CNC; phần không áp dụng sẽ không ảnh hưởng tiến độ.</div>`;
+    }
+    function updateRefining(planId, product, index, process, field, value, rerender = false, input = null) {
+      stagePlanEdit(planId, product, process, index, field, value, rerender, input);
+    }
+
+    function openPlanModal(editId) {
+      const existing = editId ? getPlan(editId) : null;
+      if (existing && hasPendingEdits(existing.id)) {
+        showToast("Kế hoạch đang có thay đổi chưa cập nhật. Hãy cập nhật dữ liệu trước.");
+        return;
+      }
+      if (existing && hasShipmentForPlan(existing.id)) {
+        showToast("Không thể sửa kế hoạch đã bàn giao để bảo toàn lịch sử đối chiếu.");
+        return;
+      }
+      const now = new Date();
+      const initialMonth = existing ? existing.month : now.getMonth() + 1;
+      const initialYear = existing ? existing.year : now.getFullYear();
+      const quantities = existing?.quantities || {};
+      const axes = existing?.axes || {};
+      const otherProducts = PRODUCT_NAMES.filter(product => !XS_VARIANTS.some(variant => variant.key === product));
+      const modal = document.getElementById("modal-root");
+      modal.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this) closeModal()"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-head"><div><div class="eyebrow">LẬP KẾ HOẠCH SẢN XUẤT</div><h2 id="modal-title">${existing ? "Chỉnh sửa kế hoạch" : "Tạo kế hoạch tháng"}</h2></div><button class="close-button" type="button" aria-label="Đóng" onclick="closeModal()">×</button></div>
+        <form class="modal-body" onsubmit="savePlan(event,${existing ? `'${existing.id}'` : "null"})">
+          <div class="form-grid"><div class="field"><label class="form-label" for="plan-month">Tháng</label><select id="plan-month" name="month" required>${MONTHS.map((month, i) => `<option value="${i + 1}" ${i + 1 === initialMonth ? "selected" : ""}>${month}</option>`).join("")}</select></div>
+          <div class="field"><label class="form-label" for="plan-year">Năm</label><input id="plan-year" name="year" type="number" min="2020" max="2100" value="${initialYear}" required></div></div>
+          <div class="field"><label class="form-label">Sản lượng XS <span style="color:var(--muted);font-weight:400">(đơn vị: bộ)</span></label>
+            <div class="xs-variant-list">${XS_VARIANTS.map(variant => `<div class="xs-variant-row">
+              <div class="xs-variant-name">XS ${variant.model}<small>MẪU MÁY</small></div>
+              <div class="field"><label class="form-label" for="quantity-${variant.key}">Số lượng</label><input id="quantity-${variant.key}" name="quantity-${variant.key}" type="number" min="0" step="1" value="${Number(quantities[variant.key] || 0)}" placeholder="0"></div>
+              <div class="field"><label class="form-label" for="axis-${variant.key}">Trục gia công</label><select id="axis-${variant.key}" name="axis-${variant.key}">${["4 trục", "5 trục", "6 trục"].map(axis => `<option value="${axis}" ${(axes[variant.key] || "4 trục") === axis ? "selected" : ""}>${axis}${axis === "4 trục" ? " · Mặc định" : ""}</option>`).join("")}</select></div>
+            </div>`).join("")}</div>
+            <label class="form-label">Sản lượng sản phẩm khác <span style="color:var(--muted);font-weight:400">(đơn vị: bộ)</span></label>
+            <div class="quantity-grid">${otherProducts.map(product => `<div class="field quantity-field"><label for="quantity-${product}">${escapeHtml(product)}<span> SẢN PHẨM</span></label><input id="quantity-${product}" name="quantity-${product}" type="number" min="0" step="1" value="${Number(quantities[product] || 0)}" placeholder="0"></div>`).join("")}</div>
+          </div>
+          <div class="modal-actions"><button class="button button-secondary" type="button" onclick="closeModal()">Hủy</button><button class="button button-primary" type="submit">Lưu kế hoạch</button></div>
+        </form></section></div>`;
+      document.getElementById("plan-month").focus();
+    }
+    function closeModal() { document.getElementById("modal-root").innerHTML = ""; }
+    function savePlan(event, editId) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const month = Number(form.elements.month.value);
+      const year = Number(form.elements.year.value);
+      const quantities = {};
+      PRODUCT_NAMES.forEach(product => { quantities[product] = Number(form.elements[`quantity-${product}`].value || 0); });
+      const axes = {};
+      XS_VARIANTS.forEach(variant => { axes[variant.key] = form.elements[`axis-${variant.key}`].value; });
+      if (!Number.isInteger(year) || year < 2020 || year > 2100 || Object.values(quantities).some(value => !Number.isInteger(value) || value < 0)) {
+        showToast("Vui lòng kiểm tra tháng, năm và số lượng sản phẩm.");
+        return;
+      }
+      const conflict = state.plans.find(plan => plan.month === month && plan.year === year && plan.id !== editId);
+      if (conflict) {
+        showToast("Tháng này đã có kế hoạch. Hãy mở kế hoạch hiện có để chỉnh sửa.");
+        return;
+      }
+      if (editId) {
+        const plan = getPlan(editId);
+        if (hasPendingEdits(editId)) {
+          showToast("Kế hoạch đang có thay đổi chưa cập nhật. Hãy cập nhật dữ liệu trước.");
+          return;
+        }
+        if (plan && hasShipmentForPlan(editId)) {
+          showToast("Không thể sửa kế hoạch đã bàn giao để bảo toàn lịch sử đối chiếu.");
+          return;
+        }
+        if (plan) {
+          plan.quantities = quantities;
+          plan.axes = axes;
+        }
+      } else {
+        state.plans.push({ id: `plan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, month, year, quantities, axes, progress: {} });
+      }
+      saveState();
+      closeModal();
+      showToast(editId ? "Kế hoạch đã được cập nhật." : "Kế hoạch tháng đã được tạo.");
+      if (editId) renderPlanDetail(); else renderPlans();
+    }
+    function renderInventory() {
+      currentView = "inventory";
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kho hàng" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">VẬT TƯ · CHI TIẾT HOÀN THÀNH</div><h1>Kho hàng</h1><p class="page-description">Quản lý phôi nhôm nhập kho và theo dõi chi tiết đã hoàn tất từ kế hoạch sản xuất.</p></div></div>
+        <section class="inventory-choice-grid" aria-label="Các loại kho">
+          <button class="inventory-choice" type="button" onclick="renderAluminumStock()"><span>KHO NGUYÊN VẬT LIỆU</span><strong>Kho nhôm</strong><small>Ghi nhận ngày nhập, loại nhôm và số lượng phôi/tấm.</small></button>
+          <button class="inventory-choice" type="button" onclick="renderFinishedStock()"><span>KHO THÀNH PHẨM</span><strong>Kho chi tiết đã gia công xong</strong><small>Tự tổng hợp theo từng sản phẩm và linh kiện đủ công đoạn.</small></button>
+        </section>`;
+      renderShell(body);
+    }
+    function aluminumStockTypes() {
+      const xsParts = XS_VARIANTS.flatMap(variant => PRODUCT_BOM[variant.key] || []);
+      const parts = [...xsParts, ...(PRODUCT_BOM.X3 || []), ...(PRODUCT_BOM.X2 || [])];
+      return [...new Set(parts.filter(part => Number(part.blank) > 0).map(part => String(part.aluminum || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "vi"));
+    }
+    function renderAluminumStock() {
+      currentView = "inventory-aluminum";
+      ensureInventoryState(state);
+      const receipts = [...state.inventory.aluminumReceipts].sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      const balances = {};
+      receipts.forEach(receipt => { balances[receipt.aluminum] = (balances[receipt.aluminum] || 0) + Number(receipt.quantity || 0); });
+      const balanceRows = aluminumStockTypes().map(type => `<tr><td class="cell-name">${escapeHtml(type)}</td><td class="stock-quantity">${formatNumber(balances[type] || 0)} phôi/tấm</td></tr>`).join("");
+      const receiptRows = receipts.map(receipt => `<tr>
+        <td>${escapeHtml(new Date(`${receipt.date}T00:00:00`).toLocaleDateString("vi-VN"))}</td>
+        <td class="cell-name">${escapeHtml(receipt.aluminum)}</td>
+        <td class="stock-quantity">${formatNumber(receipt.quantity)} phôi/tấm</td>
+        <td><button class="stock-delete" type="button" onclick="deleteAluminumReceipt('${escapeHtml(receipt.id)}')">Xóa</button></td>
+      </tr>`).join("");
+      const total = Object.values(balances).reduce((sum, quantity) => sum + quantity, 0);
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kho hàng", action: "renderInventory()" }, { label: "Kho nhôm" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">KHO NGUYÊN VẬT LIỆU</div><h1>Kho nhôm</h1><p class="page-description">Ghi nhận từng lần nhập và xem số lượng tồn theo loại nhôm trong BOM XS, X3 và X2.</p></div><span class="muted-tag">${receipts.length} LẦN NHẬP</span></div>
+        <section class="inventory-metrics"><article class="metric-card"><span>Tổng lượng đã nhập</span><strong>${formatNumber(total)} <small>phôi/tấm</small></strong></article><article class="metric-card"><span>Loại nhôm trong BOM</span><strong>${aluminumStockTypes().length}</strong></article><article class="metric-card"><span>Lần nhập kho</span><strong>${receipts.length}</strong></article></section>
+        <form class="stock-form" onsubmit="saveAluminumReceipt(event)">
+          <div class="field"><label class="form-label" for="receipt-date">Ngày nhập</label><input id="receipt-date" name="date" type="date" value="${localDateString()}" required></div>
+          <div class="field"><label class="form-label" for="receipt-aluminum">Loại nhôm</label><select id="receipt-aluminum" name="aluminum" required><option value="">Chọn loại nhôm</option>${aluminumStockTypes().map(type => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join("")}</select></div>
+          <div class="field"><label class="form-label" for="receipt-quantity">Số lượng (phôi/tấm)</label><input id="receipt-quantity" name="quantity" type="number" min="1" step="1" placeholder="0" required></div>
+          <button class="button button-primary" type="submit">${icons.plus} Nhập kho</button>
+        </form>
+        <section class="info-panel"><div class="panel-heading"><h3>Tồn theo loại nhôm</h3><span class="muted-tag">TỔNG HỢP</span></div><div class="table-scroll"><table class="stock-table"><thead><tr><th>Loại nhôm</th><th>Số lượng tồn</th></tr></thead><tbody>${balanceRows}</tbody></table></div></section>
+        <section class="info-panel" style="margin-top:16px"><div class="panel-heading"><h3>Lịch sử nhập kho</h3><span class="muted-tag">${receipts.length} DÒNG</span></div>${receipts.length ? `<div class="table-scroll"><table class="stock-table"><thead><tr><th>Ngày nhập</th><th>Loại nhôm</th><th>Số lượng</th><th></th></tr></thead><tbody>${receiptRows}</tbody></table></div>` : `<div class="empty-note">Chưa có lần nhập nhôm nào được ghi nhận.</div>`}</section>`;
+      renderShell(body);
+    }
+    function localDateString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    }
+    function saveAluminumReceipt(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const date = form.elements.date.value;
+      const aluminum = form.elements.aluminum.value;
+      const quantity = Number(form.elements.quantity.value);
+      if (!date || !aluminumStockTypes().includes(aluminum) || !Number.isInteger(quantity) || quantity <= 0) {
+        showToast("Vui lòng nhập ngày, loại nhôm trong BOM và số lượng phôi/tấm hợp lệ.");
+        return;
+      }
+      ensureInventoryState(state);
+      state.inventory.aluminumReceipts.push({
+        id: `aluminum-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        date,
+        aluminum,
+        quantity,
+        createdAt: Date.now()
+      });
+      saveState();
+      renderAluminumStock();
+      showToast("Đã ghi nhận nhôm nhập kho.");
+    }
+    function deleteAluminumReceipt(id) {
+      ensureInventoryState(state);
+      const receipt = state.inventory.aluminumReceipts.find(item => item.id === id);
+      if (!receipt || !window.confirm(`Xóa lần nhập ${receipt.aluminum} ngày ${receipt.date}?`)) return;
+      state.inventory.aluminumReceipts = state.inventory.aluminumReceipts.filter(item => item.id !== id);
+      saveState();
+      renderAluminumStock();
+      showToast("Đã xóa dòng nhập kho.");
+    }
+    function planProductionRows(plan) {
+      return productsForPlan(plan).flatMap(product => getRows(plan, product).map(row => ({
+        ...row,
+        productKey: product,
+        productLabel: productLabel(product, plan)
+      })));
+    }
+    function planReadyForHandover(plan) {
+      const rows = planProductionRows(plan);
+      return rows.length > 0 && rows.every(row => {
+        if (row.planned <= 0 || row.completed < row.planned) return false;
+        return ["taro", "deburr"].every(process => {
+          const progress = plan.refining?.[row.productKey]?.[row.index]?.[process];
+          return !progress?.enabled || Number(progress.completed || 0) >= row.planned;
+        });
+      });
+    }
+    function planHandoverItems(plan) {
+      return planProductionRows(plan).filter(row => row.planned > 0).map(row => ({
+        productKey: row.productKey,
+        product: row.productLabel,
+        partIndex: row.index,
+        stt: row.stt || row.index + 1,
+        common: row.common,
+        aluminum: row.aluminum,
+        quantity: row.planned
+      }));
+    }
+    function hasShipmentForPlan(planId) {
+      ensureInventoryState(state);
+      return state.inventory.shipments.some(shipment => shipment.planId === planId);
+    }
+    function shipmentSourceKey(planId, productKey, partIndex) {
+      return `${planId}\u0000${productKey}\u0000${partIndex}`;
+    }
+    function finishedStockRows() {
+      ensureInventoryState(state);
+      const stock = new Map();
+      const shippedBySource = new Map();
+      state.inventory.shipments.forEach(shipment => {
+        (shipment.items || []).forEach(item => {
+          const key = shipmentSourceKey(shipment.planId, item.productKey, item.partIndex);
+          shippedBySource.set(key, (shippedBySource.get(key) || 0) + Number(item.quantity || 0));
+        });
+      });
+      state.plans.forEach(plan => {
+        productsForPlan(plan).forEach(product => {
+          const label = productLabel(product, plan);
+          const rows = getRows(plan, product);
+          rows.forEach(row => {
+            let completed = Math.min(Math.max(row.completed, 0), row.planned);
+            ["taro", "deburr"].forEach(process => {
+              const processProgress = plan.refining?.[product]?.[row.index]?.[process];
+              if (processProgress?.enabled) {
+                completed = Math.min(completed, Math.max(Number(processProgress.completed || 0), 0));
+              }
+            });
+            completed = Math.max(completed - (shippedBySource.get(shipmentSourceKey(plan.id, product, row.index)) || 0), 0);
+            if (completed <= 0) return;
+            const key = `${label}\u0000${row.index}`;
+            const item = stock.get(key) || { product: label, common: row.common, stt: row.stt || row.index + 1, quantity: 0 };
+            item.quantity += completed;
+            stock.set(key, item);
+          });
+        });
+      });
+      return [...stock.values()].sort((a, b) => a.product.localeCompare(b.product, "vi") || a.stt - b.stt);
+    }
+    function renderFinishedStock() {
+      currentView = "inventory-finished";
+      const rows = finishedStockRows();
+      const total = rows.reduce((sum, row) => sum + row.quantity, 0);
+      const bodyRows = rows.map(row => `<tr><td class="cell-name">${escapeHtml(row.product)}</td><td>${String(row.stt).padStart(2, "0")}</td><td class="cell-name">${escapeHtml(row.common)}</td><td class="stock-quantity">${formatNumber(row.quantity)}</td></tr>`).join("");
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kho hàng", action: "renderInventory()" }, { label: "Kho chi tiết đã gia công xong" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">KHO THÀNH PHẨM · TỰ ĐỘNG TỔNG HỢP</div><h1>Kho chi tiết đã gia công xong</h1><p class="page-description">Tồn kho được chia theo sản phẩm và linh kiện, lấy từ tất cả kế hoạch đã lưu.</p></div><div class="plan-actions"><button class="button button-secondary" type="button" onclick="renderShipmentHistory()">Lịch sử bàn giao</button><button class="button button-primary" type="button" onclick="renderShipmentForm()">${icons.plus} Tạo phiếu bàn giao</button></div></div>
+        <section class="inventory-metrics"><article class="metric-card"><span>Tổng chi tiết đủ điều kiện</span><strong>${formatNumber(total)}</strong></article><article class="metric-card"><span>Loại linh kiện</span><strong>${rows.length}</strong></article><article class="metric-card"><span>Nguồn dữ liệu</span><strong>SQLite</strong></article></section>
+        ${rows.length ? `<section class="info-panel"><div class="panel-heading"><h3>Tồn chi tiết theo sản phẩm</h3><span class="muted-tag">CNC + CÔNG ĐOẠN ÁP DỤNG ĐÃ ĐỦ</span></div><div class="table-scroll"><table class="stock-table"><thead><tr><th>Sản phẩm</th><th>STT</th><th>Chi tiết gia công</th><th>Số lượng hoàn tất</th></tr></thead><tbody>${bodyRows}</tbody></table></div></section>` : `<div class="blank-state"><span class="blank-state-icon">${icons.box}</span><h3>Chưa có chi tiết hoàn tất</h3><p>Chi tiết sẽ tự xuất hiện tại đây khi CNC và các công đoạn Taro/Gọt via được đánh dấu áp dụng đã hoàn thành.</p><button class="button button-secondary" type="button" onclick="navigate('plans')">Mở kế hoạch tháng</button></div>`}
+        <div class="notice"><strong>Quy tắc nhập kho tự động:</strong> Số lượng thành phẩm là phần giao nhau giữa số đã gia công CNC và số đã hoàn thành ở từng công đoạn đang được đánh dấu áp dụng. Linh kiện được nhóm riêng theo sản phẩm và tên chi tiết.</div>`;
+      renderShell(body);
+    }
+    function renderShipmentForm(selectedPlanId = "") {
+      currentView = "inventory-shipment-form";
+      ensureInventoryState(state);
+      const candidates = [...state.plans]
+        .filter(plan => !hasShipmentForPlan(plan.id) && !hasPendingEdits(plan.id) && planReadyForHandover(plan))
+        .sort((a, b) => b.year - a.year || b.month - a.month);
+      const selectedPlan = candidates.find(plan => plan.id === selectedPlanId) || candidates[0] || null;
+      const items = selectedPlan ? planHandoverItems(selectedPlan) : [];
+      const itemRows = items.map(item => `<tr>
+        <td class="cell-name">${escapeHtml(item.product)}</td>
+        <td>${String(item.stt).padStart(2, "0")}</td>
+        <td class="cell-name">${escapeHtml(item.common)}</td>
+        <td>${escapeHtml(item.aluminum)}</td>
+        <td class="stock-quantity">${formatNumber(item.quantity)}</td>
+      </tr>`).join("");
+      const formContent = selectedPlan ? `<form class="shipment-form" onsubmit="saveShipment(event)">
+        <div class="field"><label class="form-label" for="shipment-plan">Kế hoạch đã hoàn tất</label><select id="shipment-plan" name="planId" required onchange="renderShipmentForm(this.value)">${candidates.map(plan => `<option value="${escapeHtml(plan.id)}" ${plan.id === selectedPlan.id ? "selected" : ""}>${escapeHtml(MONTHS[plan.month - 1])} ${plan.year} · ${formatNumber(totalForPlan(plan))} bộ</option>`).join("")}</select></div>
+        <div class="field"><label class="form-label" for="shipment-date">Ngày bàn giao</label><input id="shipment-date" name="date" type="date" value="${localDateString()}" required></div>
+        <div class="field"><label class="form-label" for="shipment-delivered-by">Người bàn giao</label><input id="shipment-delivered-by" name="deliveredBy" type="text" maxlength="80" placeholder="Tên người bàn giao"></div>
+        <div class="field"><label class="form-label" for="shipment-recipient">Người nhận</label><input id="shipment-recipient" name="recipient" type="text" maxlength="80" placeholder="Tên người nhận"></div>
+        <div class="field field-wide"><label class="form-label" for="shipment-note">Ghi chú phiếu</label><input id="shipment-note" name="note" type="text" maxlength="240" placeholder="Thông tin thêm (nếu có)"></div>
+        <section class="info-panel field-wide"><div class="panel-heading"><h3>Danh sách bàn giao</h3><span class="muted-tag">${items.length} DÒNG · ${formatNumber(items.reduce((sum, item) => sum + item.quantity, 0))} CHI TIẾT</span></div><div class="table-scroll"><table class="stock-table"><thead><tr><th>Sản phẩm</th><th>STT</th><th>Chi tiết gia công</th><th>Loại nhôm</th><th>Số lượng</th></tr></thead><tbody>${itemRows}</tbody></table></div></section>
+        <div class="field-wide" style="display:flex;justify-content:flex-end"><button class="button button-primary" type="submit">Xác nhận bàn giao toàn bộ</button></div>
+      </form>` : `<div class="blank-state"><span class="blank-state-icon">${icons.box}</span><h3>Chưa có kế hoạch đủ điều kiện bàn giao</h3><p>Để lập phiếu, toàn bộ chi tiết trong kế hoạch phải đủ CNC và các công đoạn Taro/Gọt via được đánh dấu áp dụng. Mỗi kế hoạch chỉ bàn giao một lần.</p><button class="button button-secondary" type="button" onclick="navigate('plans')">Kiểm tra kế hoạch</button></div>`;
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kho hàng", action: "renderInventory()" }, { label: "Kho chi tiết đã gia công xong", action: "renderFinishedStock()" }, { label: "Tạo phiếu bàn giao" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">XUẤT KHO · BÀN GIAO THEO KẾ HOẠCH</div><h1>Tạo phiếu bàn giao</h1><p class="page-description">Xác nhận bàn giao toàn bộ chi tiết của một kế hoạch đã hoàn tất. Phiếu được lưu để tra cứu và đối chiếu.</p></div><button class="button button-secondary" type="button" onclick="renderShipmentHistory()">Lịch sử bàn giao</button></div>
+        ${formContent}`;
+      renderShell(body);
+    }
+    function saveShipment(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const plan = getPlan(form.elements.planId.value);
+      if (!plan || hasShipmentForPlan(form.elements.planId.value) || !planReadyForHandover(plan)) {
+        showToast("Kế hoạch không còn đủ điều kiện bàn giao. Hãy kiểm tra tiến độ và lịch sử.");
+        renderShipmentForm();
+        return;
+      }
+      const items = planHandoverItems(plan);
+      if (!items.length || !form.elements.date.value) {
+        showToast("Không có chi tiết hợp lệ để lập phiếu hoặc ngày bàn giao chưa hợp lệ.");
+        return;
+      }
+      const date = form.elements.date.value;
+      ensureInventoryState(state);
+      state.inventory.shipments.push({
+        id: `shipment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        code: `BG-${date.replace(/-/g, "")}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        planId: plan.id,
+        planMonth: plan.month,
+        planYear: plan.year,
+        planQuantity: totalForPlan(plan),
+        planProducts: productsForPlan(plan).map(product => ({
+          name: productLabel(product, plan),
+          quantity: Number(plan.quantities[product] || 0)
+        })),
+        date,
+        deliveredBy: form.elements.deliveredBy.value.trim(),
+        recipient: form.elements.recipient.value.trim(),
+        note: form.elements.note.value.trim(),
+        items,
+        createdAt: Date.now()
+      });
+      saveState();
+      renderShipmentHistory();
+      showToast("Đã lưu phiếu bàn giao. Kế hoạch đã được khóa để tránh xuất trùng.");
+    }
+    function xmlEscape(value) {
+      return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;"
+      })[character]);
+    }
+    function docxParagraph(text, options = {}) {
+      const align = options.align ? `<w:jc w:val="${options.align}"/>` : "";
+      const bold = options.bold ? "<w:b/>" : "";
+      const size = options.size || 24;
+      const font = `<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>`;
+      return `<w:p><w:pPr>${align}</w:pPr><w:r><w:rPr>${font}${bold}<w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r></w:p>`;
+    }
+    function docxTableCell(text, width, header = false, centered = false) {
+      const font = `<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>`;
+      return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${header ? "<w:shd w:fill=\"D9E2F3\"/>" : ""}<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr>${centered ? '<w:jc w:val="center"/>' : ""}</w:pPr><w:r><w:rPr>${font}${header ? "<w:b/>" : ""}<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r></w:p></w:tc>`;
+    }
+    function docxTableRow(values, widths, header = false) {
+      return `<w:tr>${header ? '<w:trPr><w:tblHeader w:val="true"/></w:trPr>' : ""}${values.map((value, index) => docxTableCell(value, widths[index], header, index === 1 || index === 4)).join("")}</w:tr>`;
+    }
+    function crc32(bytes) {
+      let crc = 0xFFFFFFFF;
+      for (const byte of bytes) {
+        crc ^= byte;
+        for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
+      }
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    function zipStoredFiles(files) {
+      const encoder = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+      for (const file of files) {
+        const name = encoder.encode(file.name);
+        const data = encoder.encode(file.content);
+        const checksum = crc32(data);
+        const local = new Uint8Array(30 + name.length);
+        const localView = new DataView(local.buffer);
+        localView.setUint32(0, 0x04034B50, true);
+        localView.setUint16(4, 20, true);
+        localView.setUint16(6, 0x0800, true);
+        localView.setUint16(8, 0, true);
+        localView.setUint16(10, 0, true);
+        localView.setUint16(12, 0x0021, true);
+        localView.setUint32(14, checksum, true);
+        localView.setUint32(18, data.length, true);
+        localView.setUint32(22, data.length, true);
+        localView.setUint16(26, name.length, true);
+        local.set(name, 30);
+        localParts.push(local, data);
+
+        const central = new Uint8Array(46 + name.length);
+        const centralView = new DataView(central.buffer);
+        centralView.setUint32(0, 0x02014B50, true);
+        centralView.setUint16(4, 20, true);
+        centralView.setUint16(6, 20, true);
+        centralView.setUint16(8, 0x0800, true);
+        centralView.setUint16(10, 0, true);
+        centralView.setUint16(12, 0, true);
+        centralView.setUint16(14, 0x0021, true);
+        centralView.setUint32(16, checksum, true);
+        centralView.setUint32(20, data.length, true);
+        centralView.setUint32(24, data.length, true);
+        centralView.setUint16(28, name.length, true);
+        centralView.setUint16(30, 0, true);
+        centralView.setUint16(32, 0, true);
+        centralView.setUint16(34, 0, true);
+        centralView.setUint16(36, 0, true);
+        centralView.setUint32(38, 0, true);
+        centralView.setUint32(42, offset, true);
+        central.set(name, 46);
+        centralParts.push(central);
+        offset += local.length + data.length;
+      }
+      const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+      const end = new Uint8Array(22);
+      const endView = new DataView(end.buffer);
+      endView.setUint32(0, 0x06054B50, true);
+      endView.setUint16(8, files.length, true);
+      endView.setUint16(10, files.length, true);
+      endView.setUint32(12, centralSize, true);
+      endView.setUint32(16, offset, true);
+      return new Blob([...localParts, ...centralParts, end], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      });
+    }
+    function downloadShipmentDocx(shipmentId) {
+      const shipment = state.inventory.shipments.find(item => item.id === shipmentId);
+      if (!shipment) {
+        showToast("Không tìm thấy phiếu bàn giao để xuất file.");
+        return;
+      }
+      const items = Array.isArray(shipment.items) ? shipment.items : [];
+      const widths = [2200, 800, 5500, 3600, 3200];
+      const tableBorders = `<w:tblBorders><w:top w:val="single" w:sz="4" w:color="808080"/><w:left w:val="single" w:sz="4" w:color="808080"/><w:bottom w:val="single" w:sz="4" w:color="808080"/><w:right w:val="single" w:sz="4" w:color="808080"/><w:insideH w:val="single" w:sz="4" w:color="808080"/><w:insideV w:val="single" w:sz="4" w:color="808080"/></w:tblBorders>`;
+      const tableCellMargins = `<w:tblCellMar><w:top w:w="90" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="90" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tblCellMar>`;
+      const grid = `<w:tblGrid>${widths.map(width => `<w:gridCol w:w="${width}"/>`).join("")}</w:tblGrid>`;
+      const tableRows = [
+        docxTableRow(["Sản phẩm", "STT", "Chi tiết gia công", "Loại nhôm", "Số lượng"], widths, true),
+        ...items.map(item => docxTableRow([
+          item.product || "—",
+          String(item.stt || item.partIndex + 1 || "—"),
+          item.common || "—",
+          item.aluminum || "—",
+          formatNumber(item.quantity)
+        ], widths))
+      ].join("");
+      const date = shipment.date ? new Date(`${shipment.date}T00:00:00`).toLocaleDateString("vi-VN") : "—";
+      const planQuantityLabel = Number.isFinite(Number(shipment.planQuantity))
+        ? `${formatNumber(shipment.planQuantity)} bộ`
+        : "—";
+      const productSummary = Array.isArray(shipment.planProducts)
+        ? shipment.planProducts.map(product => `${product.name || "—"} (${formatNumber(product.quantity)} bộ)`).join(", ")
+        : "—";
+      const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+        ${docxParagraph("PHIẾU BÀN GIAO CHI TIẾT", { align: "center", bold: true, size: 32 })}
+        ${docxParagraph(`Mã phiếu: ${shipment.code || "—"}`, { bold: true })}
+        ${docxParagraph(`Ngày bàn giao: ${date}`)}
+        ${docxParagraph(`Kế hoạch: ${MONTHS[(shipment.planMonth || 1) - 1]} ${shipment.planYear || "—"} · ${planQuantityLabel}`)}
+        ${docxParagraph(`Sản phẩm trong kế hoạch: ${productSummary}`)}
+        ${docxParagraph(`Người bàn giao: ${shipment.deliveredBy || "—"}     Người nhận: ${shipment.recipient || "—"}`)}
+        ${shipment.note ? docxParagraph(`Ghi chú: ${shipment.note}`) : ""}
+        ${docxParagraph(`Tổng số chi tiết bàn giao: ${formatNumber(items.reduce((sum, item) => sum + Number(item.quantity || 0), 0))}`, { bold: true })}
+        <w:tbl><w:tblPr><w:tblW w:w="15300" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/>${tableBorders}${tableCellMargins}</w:tblPr>${grid}${tableRows}</w:tbl>
+        ${docxParagraph(" ")}
+        ${docxParagraph("NGƯỜI BÀN GIAO                                              NGƯỜI NHẬN", { align: "center", bold: true })}
+        ${docxParagraph("(Ký, ghi rõ họ tên)                                         (Ký, ghi rõ họ tên)", { align: "center" })}
+        <w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="850" w:right="720" w:bottom="850" w:left="720" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>
+        </w:body></w:document>`;
+      const files = [
+        {
+          name: "[Content_Types].xml",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`
+        },
+        {
+          name: "_rels/.rels",
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`
+        },
+        { name: "word/document.xml", content: documentXml }
+      ];
+      const filename = `${String(shipment.code || "phieu-ban-giao").replace(/[<>:"/\\|?*]/g, "-")}.docx`;
+      const url = URL.createObjectURL(zipStoredFiles(files));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function deleteShipment(shipmentId) {
+      ensureInventoryState(state);
+      const shipmentIndex = state.inventory.shipments.findIndex(item => item.id === shipmentId);
+      if (shipmentIndex < 0) {
+        showToast("Không tìm thấy phiếu bàn giao cần xóa.");
+        return;
+      }
+      const shipment = state.inventory.shipments[shipmentIndex];
+      const code = shipment.code || "phiếu bàn giao";
+      const planExists = state.plans.some(plan => plan.id === shipment.planId);
+      if (!window.confirm(`Xóa riêng ${code}?\n\nChỉ phiếu này bị xóa khỏi lịch sử. Số lượng sẽ được trả lại khả dụng ở kho chi tiết đã gia công xong và kế hoạch liên quan sẽ được mở khóa nếu vẫn còn tồn tại. Thao tác không thể hoàn tác.`)) return;
+      state.inventory.shipments.splice(shipmentIndex, 1);
+      saveState();
+      renderShipmentHistory();
+      showToast(`Đã xóa riêng ${code}.${planExists ? " Kế hoạch liên quan đã được mở khóa." : ""}`);
+    }
+    function renderShipmentHistory() {
+      currentView = "inventory-shipment-history";
+      ensureInventoryState(state);
+      const shipments = [...state.inventory.shipments].sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      const records = shipments.map(shipment => {
+        const items = Array.isArray(shipment.items) ? shipment.items : [];
+        const quantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+        const rows = items.map(item => `<tr>
+          <td class="cell-name">${escapeHtml(item.product)}</td>
+          <td>${String(item.stt || item.partIndex + 1).padStart(2, "0")}</td>
+          <td class="cell-name">${escapeHtml(item.common)}</td>
+          <td>${escapeHtml(item.aluminum || "—")}</td>
+          <td class="stock-quantity">${formatNumber(item.quantity)}</td>
+        </tr>`).join("");
+        return `<details class="info-panel shipment-record">
+          <summary><strong>${escapeHtml(shipment.code || "Phiếu bàn giao")}</strong><span>${escapeHtml(new Date(`${shipment.date}T00:00:00`).toLocaleDateString("vi-VN"))} · ${escapeHtml(MONTHS[(shipment.planMonth || 1) - 1])} ${escapeHtml(shipment.planYear)} · ${formatNumber(quantity)} chi tiết</span></summary>
+          <div class="shipment-record-body"><div class="shipment-actions"><button class="button button-secondary" type="button" onclick="downloadShipmentDocx('${escapeHtml(shipment.id)}')">Tải phiếu Word (.docx)</button><button class="stock-delete" type="button" aria-label="Xóa riêng phiếu ${escapeHtml(shipment.code || "")}" onclick="deleteShipment('${escapeHtml(shipment.id)}')">Xóa phiếu</button></div><div class="shipment-meta"><span>Người bàn giao: ${escapeHtml(shipment.deliveredBy || "—")}</span><span>Người nhận: ${escapeHtml(shipment.recipient || "—")}</span>${shipment.note ? `<span>Ghi chú: ${escapeHtml(shipment.note)}</span>` : ""}</div>
+          <div class="table-scroll"><table class="stock-table"><thead><tr><th>Sản phẩm</th><th>STT</th><th>Chi tiết gia công</th><th>Loại nhôm</th><th>Số lượng bàn giao</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+        </details>`;
+      }).join("");
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Kho hàng", action: "renderInventory()" }, { label: "Kho chi tiết đã gia công xong", action: "renderFinishedStock()" }, { label: "Lịch sử bàn giao" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">TRA CỨU · ĐỐI CHIẾU</div><h1>Lịch sử bàn giao</h1><p class="page-description">Mỗi phiếu lưu thông tin kế hoạch và số lượng chi tiết tại thời điểm bàn giao.</p></div><button class="button button-primary" type="button" onclick="renderShipmentForm()">${icons.plus} Tạo phiếu mới</button></div>
+        ${shipments.length ? records : `<div class="blank-state"><span class="blank-state-icon">${icons.box}</span><h3>Chưa có phiếu bàn giao</h3><p>Phiếu sẽ xuất hiện tại đây sau khi bàn giao một kế hoạch đã hoàn tất.</p><button class="button button-primary" type="button" onclick="renderShipmentForm()">Tạo phiếu bàn giao</button></div>`}`;
+      renderShell(body);
+    }
+    function catalogPartsForProduct(product) {
+      const variant = XS_VARIANTS.find(item => item.key === product);
+      return (PRODUCT_BOM[product] || []).filter(part => !variant || !part.model || part.model === variant.size);
+    }
+    function productCardImageLoadFailed(image) {
+      console.error("Không thể tải ảnh sản phẩm:", image.currentSrc);
+      const container = image.parentElement;
+      if (!container) return;
+      container.classList.remove("has-photo");
+      container.innerHTML = icons.machine;
+    }
+    function renderProducts() {
+      currentView = "products";
+      activeCatalogProduct = null;
+      const cards = PRODUCT_NAMES.map(product => {
+        const parts = catalogPartsForProduct(product);
+        const imageFile = PRODUCT_CARD_IMAGES[product];
+        const art = imageFile
+          ? `<img src="/File_Anh_WebCNC/${encodeURIComponent(imageFile)}" alt="" aria-hidden="true" loading="lazy" onerror="productCardImageLoadFailed(this)">`
+          : icons.machine;
+        return `<button type="button" class="gallery-card product-choice" onclick="openProductCatalog('${escapeHtml(product)}')"><div class="gallery-art ${imageFile ? "has-photo" : ""}">${art}</div><h3>${escapeHtml(productLabel(product))}</h3><p>${parts.length} chi tiết trong danh mục · Mở để xem ảnh và thông tin</p></button>`;
+      }).join("");
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Sản phẩm & chi tiết" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">DANH MỤC · CẤU TRÚC SẢN PHẨM</div><h1>Sản phẩm & chi tiết</h1><p class="page-description">Chọn một sản phẩm để tra cứu tên, loại phôi, định mức và hình ảnh từng chi tiết.</p></div></div>
+        <section class="gallery-grid">${cards}</section>
+        <div class="notice">Ảnh máy đã gắn ở các thẻ sản phẩm; ảnh linh kiện được ghép theo tên file. Chi tiết chưa có ảnh phù hợp vẫn được giữ lại để bổ sung sau.</div>`;
+      renderShell(body);
+    }
+    function openProductCatalog(product) {
+      if (!PRODUCT_NAMES.includes(product)) {
+        showToast("Không tìm thấy sản phẩm trong danh mục.");
+        renderProducts();
+        return;
+      }
+      activeCatalogProduct = product;
+      currentView = "product-detail";
+      renderProductCatalogDetail();
+    }
+    function catalogImageFile(product, part) {
+      return PRODUCT_PART_IMAGES[product]?.[part.common]
+        || (XS_VARIANTS.some(variant => variant.key === product) ? XS_PART_IMAGES[part.common] : null);
+    }
+    function catalogImageLoadFailed(image) {
+      console.error("Không thể tải ảnh chi tiết:", image.currentSrc);
+      const container = image.parentElement;
+      if (!container) return;
+      container.classList.remove("has-photo");
+      container.innerHTML = `${icons.image}<small>CHƯA TẢI ĐƯỢC ẢNH</small>`;
+    }
+    function renderProductCatalogDetail() {
+      const product = activeCatalogProduct;
+      if (!product || !PRODUCT_NAMES.includes(product)) {
+        renderProducts();
+        return;
+      }
+      const parts = catalogPartsForProduct(product);
+      const modelParts = parts.filter(part => part.model).length;
+      const axisParts = parts.filter(part => part.axis).length;
+      const imageCount = parts.filter(part => catalogImageFile(product, part)).length;
+      const cards = parts.map((part, index) => {
+        const applicable = part.axis ? `Máy ${part.axis} trục` : part.model ? `Mẫu D${part.model}` : "Dùng chung";
+        const perUnit = part.axis ? "1 cái/bộ · tùy cấu hình" : `${formatNumber(part.perUnit)} cái/bộ`;
+        const searchText = `${part.common} ${part.aluminum} ${applicable}`.toLocaleLowerCase("vi");
+        const imageFile = catalogImageFile(product, part);
+        const photo = imageFile
+          ? `<img src="/File_Anh_WebCNC/${encodeURIComponent(imageFile)}" alt="Ảnh ${escapeHtml(part.common)}" loading="lazy" onerror="catalogImageLoadFailed(this)">`
+          : `${icons.image}<small>CHỜ ẢNH CHI TIẾT</small>`;
+        return `<article class="part-gallery-card" data-catalog-part="${escapeHtml(searchText)}">
+          <div class="part-photo-placeholder ${imageFile ? "has-photo" : ""}" ${imageFile ? "" : `role="img" aria-label="Chưa có ảnh ${escapeHtml(part.common)}"`}>${photo}</div>
+          <div class="part-gallery-info"><span class="part-serial">STT ${String(part.stt || index + 1).padStart(2, "0")}</span><h3>${escapeHtml(part.common)}</h3>
+            <div class="part-spec-list"><span>Loại phôi <strong>${escapeHtml(part.aluminum || "—")}</strong></span><span>Định mức <strong>${perUnit}</strong></span><span>Phạm vi <strong>${escapeHtml(applicable)}</strong></span></div>
+          </div>
+        </article>`;
+      }).join("");
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Danh mục sản phẩm", action: "renderProducts()" }, { label: productLabel(product) }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">THƯ VIỆN CHI TIẾT · ${parts.length} HẠNG MỤC</div><h1>${escapeHtml(productLabel(product))}</h1><p class="page-description">Tên chi tiết, phôi và định mức theo BOM. Đã gắn ${imageCount}/${parts.length} ảnh; chi tiết chưa có ảnh vẫn được giữ trong danh mục.</p></div></div>
+        <div class="product-catalog-toolbar"><div class="field"><label class="sr-only" for="catalog-part-search">Tìm chi tiết</label><input id="catalog-part-search" type="search" placeholder="Tìm tên chi tiết, loại phôi..." oninput="filterProductCatalog(this.value)"></div><span class="muted-tag">${imageCount} CÓ ẢNH · ${modelParts} THEO MẪU · ${axisParts} THEO TRỤC</span></div>
+        <section class="part-gallery-grid" aria-label="Danh sách chi tiết">${cards}</section>
+        <div id="catalog-search-empty" class="notice part-search-empty">Không tìm thấy chi tiết phù hợp.</div>
+        <div class="notice">Ảnh được ghép theo tên chi tiết. Các mục còn hiện “CHỜ ẢNH CHI TIẾT” chưa có ảnh phù hợp trong thư mục.</div>`;
+      renderShell(body);
+    }
+    function filterProductCatalog(query) {
+      const normalizedQuery = String(query || "").trim().toLocaleLowerCase("vi");
+      const cards = [...document.querySelectorAll(".part-gallery-card")];
+      let visible = 0;
+      cards.forEach(card => {
+        const matches = !normalizedQuery || card.dataset.catalogPart.includes(normalizedQuery);
+        card.hidden = !matches;
+        if (matches) visible++;
+      });
+      const empty = document.getElementById("catalog-search-empty");
+      if (empty) empty.style.display = visible ? "none" : "block";
+    }
+    function renderMachines() {
+      const plans = [...state.plans].sort((a, b) => b.year - a.year || b.month - a.month);
+      const latestPlan = plans[0];
+      const currentProducts = latestPlan ? productsForPlan(latestPlan) : [];
+      const sourceRowCount = CNC_MACHINE_PARTS.reduce((total, part) => total + part.stt.length, 0);
+      const cards = [1, 2, 3, 4].map(number => {
+        const selected = state.allocations[`CNC-${number}`] || "";
+        const parts = CNC_MACHINE_PARTS.filter(part => part.machines.includes(number));
+        const renderPartRow = (part, index) => `<div class="machine-part-row">
+          <div class="machine-part-detail"><span class="machine-part-stt">${String(index + 1).padStart(2, "0")}</span><span class="machine-part-name">${escapeHtml(part.name)}</span></div>
+          <span class="machine-part-empty">—</span><span class="machine-part-empty">—</span>
+        </div>`;
+        const previewRows = parts.slice(0, 5).map((part, index) => renderPartRow(part, index)).join("");
+        const extraParts = parts.slice(5);
+        const extraRows = extraParts.map((part, index) => renderPartRow(part, index + 5)).join("");
+        const expandControl = extraParts.length
+          ? `<details class="machine-parts-expander"><summary><span class="machine-expand-more">Xem thêm ${extraParts.length} chi tiết</span><span class="machine-expand-less">Thu gọn danh sách</span></summary>${extraRows}</details>`
+          : `<div class="machine-parts-complete">Đã hiển thị toàn bộ danh sách</div>`;
+        return `<article class="machine-card"><div class="machine-head"><span class="machine-icon">${icons.machine}</span><span class="muted-tag">${parts.length} CHI TIẾT</span></div><h3>Máy CNC-${String(number).padStart(2, "0")}</h3><p>Chi tiết được phân công theo danh sách của xưởng</p>
+          <div class="field"><label class="form-label" for="machine-${number}">Sản phẩm trong kế hoạch</label><select id="machine-${number}" onchange="allocateMachine(${number},this.value)"><option value="">Chưa phân bổ sản phẩm</option>${currentProducts.map(product => `<option value="${escapeHtml(product)}" ${selected === product ? "selected" : ""}>${escapeHtml(productLabel(product, latestPlan))}</option>`).join("")}</select></div>
+          <div class="machine-part-heading"><strong>LINH KIỆN GIA CÔNG</strong><span>${parts.length} chi tiết</span></div>
+          <div class="machine-part-table"><div class="machine-part-table-head"><span>STT · TÊN CHI TIẾT</span><span>THỜI GIAN / 1 CHI TIẾT</span><span>GHI CHÚ</span></div>${previewRows}${expandControl}</div>
+        </article>`;
+      }).join("");
+      const body = `${breadcrumb([{ label: "Tổng quan", action: "navigate('dashboard')" }, { label: "Máy CNC" }])}
+        <div class="page-heading"><div class="heading-copy"><div class="eyebrow">ĐIỀU PHỐI · PHÂN BỔ SẢN XUẤT</div><h1>Máy CNC</h1><p class="page-description">${sourceRowCount} dòng phân công từ danh sách của xưởng, sắp xếp theo từng máy. Bạn vẫn có thể gán sản phẩm từ kế hoạch cho từng máy.</p></div><span class="muted-tag">${currentProducts.length ? `${currentProducts.length} SẢN PHẨM TRONG KẾ HOẠCH` : "CHƯA CÓ KẾ HOẠCH"}</span></div>
+        <section class="machine-grid">${cards}</section>
+        <div class="notice">Dòng 14 và 41 trong ảnh gốc được gộp vì trùng tên chi tiết và máy phân công. Thời gian chạy và ghi chú chưa có trong ảnh nguồn nên đang để “—”.</div>
+        ${!currentProducts.length ? `<div class="notice">Chưa có kế hoạch sản xuất để gán sản phẩm cho máy; danh sách linh kiện theo từng máy vẫn hiển thị.</div>` : ""}`;
+      renderShell(body);
+    }
+    function allocateMachine(number, product) {
+      const key = `CNC-${number}`;
+      if (product) state.allocations[key] = product;
+      else delete state.allocations[key];
+      saveState();
+      showToast(product ? `Đã phân bổ ${product} cho máy CNC-${String(number).padStart(2, "0")}.` : `Đã bỏ phân bổ máy CNC-${String(number).padStart(2, "0")}.`);
+    }
+    function navigate(view) {
+      currentView = view;
+      if (view === "dashboard") renderDashboard();
+      else if (view === "plans") renderPlans();
+      else if (view === "inventory") renderInventory();
+      else if (view === "products") renderProducts();
+      else if (view === "machines") renderMachines();
+      else if (view === "access" && currentUser?.role === "admin") renderAccessManagement();
+      else renderDashboard();
+    }
+    function showToast(message) {
+      const root = document.getElementById("toast-root");
+      root.innerHTML = `<div class="toast"><span class="status-dot"></span>${escapeHtml(message)}</div>`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { root.innerHTML = ""; }, 2800);
+    }
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeModal();
+    });
+    window.addEventListener("beforeunload", event => {
+      if (Object.keys(pendingPlanEdits).length) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
+    initializeDatabase();
+  </script>
+</body>
+</html>
